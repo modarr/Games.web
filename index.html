@@ -121,6 +121,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #selfpanel button{flex:1 1 auto;padding:calc(var(--u)*1.8) calc(var(--u)*2.2);border-radius:calc(var(--u)*1.6);border:1px solid rgba(255,255,255,.22);background:#231a5a;color:var(--ink);font:inherit;font-weight:700;font-size:max(12px,calc(var(--u)*3));cursor:pointer}
 #selfpanel button:active{background:#3a2a8a}
 #selfpanel .note{margin:calc(var(--u)*1.6) 0 0;font-size:max(10px,calc(var(--u)*2.5));color:rgba(246,242,255,.6);line-height:1.35}
+#roundbar{position:absolute;top:calc(var(--u)*3);left:50%;transform:translateX(-50%);z-index:45;background:rgba(11,8,32,.72);border:1px solid rgba(255,255,255,.2);border-radius:calc(var(--u)*6);padding:calc(var(--u)*1.4) calc(var(--u)*4);font-weight:800;font-size:max(13px,calc(var(--u)*3.4));color:var(--gold);letter-spacing:.02em;pointer-events:none;text-align:center;white-space:nowrap}
+#roundbar.hot{color:#ff5a7a;animation:rpulse .6s infinite}
+@keyframes rpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
+#winbig{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:calc(var(--u)*2);background:radial-gradient(circle,rgba(30,10,60,.55),rgba(5,3,15,.85));opacity:0;pointer-events:none;transition:opacity .4s}
+#winbig.on{opacity:1}
+#winbig .crown{font-size:calc(var(--u)*20);animation:winbob 1s ease-in-out infinite}
+@keyframes winbob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+#winbig .wname{font-family:'Bungee',system-ui;font-size:calc(var(--u)*8);color:#fff;text-shadow:0 0 20px var(--gold),0 2px 6px rgba(0,0,0,.9);text-align:center;padding:0 calc(var(--u)*4)}
+#winbig .wsub{font-size:calc(var(--u)*3.6);color:var(--gold);font-weight:700}
 #dbg{position:absolute;left:0;right:0;bottom:0;z-index:90;margin:0;padding:4px 6px;font:10px/1.3 monospace;background:rgba(0,0,0,.8);color:#9fe8ff;pointer-events:none;max-height:18%;overflow:hidden;white-space:pre-wrap}
 
 #panel{position:absolute;left:calc(var(--u)*3);right:calc(var(--u)*3);bottom:calc(var(--u)*3);z-index:60;background:rgba(11,8,32,.95);border:1px solid rgba(255,255,255,.18);border-radius:calc(var(--u)*3);padding:calc(var(--u)*3);max-height:62%;overflow:auto}
@@ -206,6 +215,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     </div>
     <p class="note">This only affects your own bubble. No coins or gifts are used, and viewers never see this panel.</p>
   </div>
+  <div id="roundbar"></div>
+  <div id="winbig">
+    <div class="crown">👑</div>
+    <div class="wname" id="winname"></div>
+    <div class="wsub" id="winsub"></div>
+  </div>
   <pre id="dbg" hidden></pre>
 </div>
 
@@ -244,7 +259,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     crowdStart: 14, crowdStep: 0.009, crowdMin: 0.5, // bubbles shrink as more viewers join
     shield: 2.2, hitCd: 0.16,
     dmgBase: 1.5, dmgPerBlade: 1.2, dmgPct: 0.012, steal: 0.35, killBonus: 6,
-    bigGift: 100                                     // coins needed for a spoken shout-out
+    bigGift: 100,                                    // coins needed for a spoken shout-out
+    roundSecs: 240, roundGap: 20                     // 4-minute rounds with a 20s break between
   };
   // Approximate current coin prices (they change; the game only uses the coin value it receives)
   const GIFTS = [
@@ -621,12 +637,68 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function intro() {
     showMotiv('💬 Comment · 👍 Like · 🔗 Share = points in the battle! 🌹 Send a Rose = a blade ⚔️');
     speak('Welcome! Comment, like or share for points. Send a rose for a blade!', 0);
+    round.num = 1; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
+    $('roundbar').textContent = '⚔️ Round 1 · ' + fmtT(round.t) + ' left';
   }
   setTimeout(() => { motivate(); setInterval(motivate, 60000); }, 30000);
   const HOW = ['💬 Comment · 👍 Like · 🔗 Share = points and growth', '🌹 Send a Rose = a blade ⚔️ to fight with!'];
   let howI = 0; const howEl = $('howto');
   const howTick = () => { howEl.textContent = HOW[howI++ % HOW.length]; };
   howTick(); setInterval(howTick, 6000);
+
+  /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
+  const round = { t: CFG.roundSecs, phase: 'play', num: 1, calledHalf: false, called30: false };
+  function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function callLeader(prefix) {
+    if (!leader) return;
+    const name = speakName(leader.name);
+    showMotiv('👑 ' + leader.name + ' is in the lead! Comment, like, share or send a Rose to catch up.');
+    speak(prefix + name + ' is in the lead!', 0);
+  }
+  function roundTick(dt) {
+    const bar = $('roundbar');
+    round.t -= dt;
+    if (round.phase === 'play') {
+      bar.classList.toggle('hot', round.t <= 10);
+      bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + (leader ? ' · 👑 ' + leader.name : '');
+      const half = CFG.roundSecs / 2;
+      if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
+      if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
+      if (round.t <= 10 && round.t > 9.9) speak('Ten seconds left! Send a rose now!', 0);
+      if (round.t <= 0) endRound();
+    } else {
+      bar.classList.remove('hot');
+      bar.textContent = '🔥 Next round in ' + fmtT(round.t) + '...';
+      if (round.t <= 0) startRound();
+    }
+  }
+  function endRound() {
+    const al = aliveList().sort((a, b) => b.points - a.points);
+    round.phase = 'gap'; round.t = CFG.roundGap;
+    if (al.length) {
+      const w = al[0];
+      $('winname').textContent = '👑 ' + w.name;
+      $('winsub').textContent = 'Round ' + round.num + ' champion · ' + Math.round(w.points).toLocaleString() + ' points';
+      $('winbig').classList.add('on');
+      ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
+      sfx.horn(); shake(3);
+      feed('👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
+      speak(speakName(w.name) + ' wins the round! New round starting soon.', 100);
+      setTimeout(() => $('winbig').classList.remove('on'), CFG.roundGap > 6 ? 5000 : (CFG.roundGap - 1) * 1000);
+    } else {
+      $('winname').textContent = '🌀 No champion yet';
+      $('winsub').textContent = 'Comment, like or share to join the next round!';
+      $('winbig').classList.add('on');
+      setTimeout(() => $('winbig').classList.remove('on'), 4000);
+    }
+  }
+  function startRound() {
+    round.num++; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
+    showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!');
+    speak('Round ' + round.num + ' begins now!', 0);
+    feed('⚔️ Round ' + round.num + ' begins!', 'join');
+  }
+
 
   /* ---------- Events (public API) ---------- */
   function addPoints(p, n) { p.points += n; p.pulse = 1; }
@@ -874,6 +946,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   function update(dt) {
     time += dt;
+    roundTick(dt);
     const alive = aliveList();
     sizeScale = clamp(1 - (alive.length - CFG.crowdStart) * CFG.crowdStep, CFG.crowdMin, 1);
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
