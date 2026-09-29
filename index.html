@@ -1319,6 +1319,29 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     for (const p of aliveList().sort((a, b) => a.r - b.r)) if (Math.hypot(p.x - x, p.y - y) <= p.r + 6) { event({ type: 'tap', user: p.name }); break; }
   });
 
+  /* ---------- Host-only: press and hold a bubble to grant it a blade ---------- */
+  /* Works even in overlay mode, since only the host's own machine can click the live page. */
+  let holdTimer = null, holdTarget = null;
+  const HOLD_MS = 750;
+  function findBubbleAt(clientX, clientY) {
+    const r = cv.getBoundingClientRect();
+    const x = (clientX - r.left) / r.width * W, y = (clientY - r.top) / r.height * H;
+    for (const p of aliveList().sort((a, b) => a.r - b.r)) if (Math.hypot(p.x - x, p.y - y) <= p.r + 6) return p;
+    return null;
+  }
+  function grantBlade(p) {
+    if (!p || !p.alive) return;
+    p.blades = Math.min(CFG.maxBlades, p.blades + 1); p.shield = Math.max(p.shield, 1);
+    floater(p.x, p.y - p.r - 10, '+1 ⚔', '#35e0ff', 18); ring(p.x, p.y, '#35e0ff', p.r + 30, .4, 3); sfx.gift(2);
+  }
+  cv.addEventListener('pointerdown', e => {
+    holdTarget = findBubbleAt(e.clientX, e.clientY);
+    if (!holdTarget) return;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { grantBlade(holdTarget); holdTarget = null; }, HOLD_MS);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { clearTimeout(holdTimer); holdTarget = null; }));
+
   /* ---------- Demo viewers ---------- */
   const A = ['luna', 'max', 'kai', 'zoe', 'neo', 'ivy', 'leo', 'mia', 'rex', 'sky', 'ash', 'jax', 'nova', 'ryn', 'tia', 'bo', 'fox', 'dre', 'lux', 'eli'];
   const B = ['_x', '99', '_tv', '.official', '7', '_live', 'xo', '_23', '', '_yt'];
