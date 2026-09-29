@@ -33,7 +33,7 @@
 <style>
 :root{
   --bg:#06040f; --cyan:#35e0ff; --hot:#ff3d81; --gold:#ffd23f; --ink:#f6f2ff;
-  --w:min(100vw,56.25vh);
+  --w:100vw;
   --u:calc(var(--w)/100);
   --display:'Bungee',Impact,'Arial Black',sans-serif;
   --body:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -41,7 +41,7 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-@supports (height:100dvh){ :root{ --w:min(100vw,56.25dvh); } }
+@supports (height:100dvh){ :root{ --w:100vw; } }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -49,7 +49,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;color-s
 body{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--body)}
 
 #game{
-  position:relative;width:var(--w);height:calc(var(--w)*16/9);max-width:100%;overflow:hidden;
+  position:relative;width:100vw;height:100vh;max-width:100%;overflow:hidden;
   touch-action:none;user-select:none;-webkit-user-select:none;
   background:
     radial-gradient(90% 55% at 50% 48%, #1d1450 0%, rgba(29,20,80,0) 70%),
