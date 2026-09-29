@@ -45,11 +45,11 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-html,body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;color-scheme:dark}
-body{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--body)}
+html,body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;color-scheme:dark;width:100%;height:100%}
+body{display:flex;align-items:center;justify-content:center;font-family:var(--body)}
 
 #game{
-  position:relative;width:100vw;height:100vh;max-width:100%;overflow:hidden;
+  position:relative;width:100%;height:100%;overflow:hidden;
   touch-action:none;user-select:none;-webkit-user-select:none;
   background:
     radial-gradient(90% 55% at 50% 48%, #1d1450 0%, rgba(29,20,80,0) 70%),
@@ -264,7 +264,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const TEST = MODE === 'test';
   const OVERLAY = TEST ? Q.get('overlay') === '1' : Q.get('overlay') !== '0';
   const DEMO = TEST ? Q.get('demo') !== '0' : Q.get('demo') === '1';
-  const LEGEND = Q.get('legend') !== '0';
+  const LEGEND = false;   // side menu removed: arena uses the full screen
   const CHROMA = Q.get('chroma');
   const DEBUG = Q.get('debug') === '1';
   const TIKFINITY = Q.get('tikfinity') === '1' || (!TEST && !Q.get('ws') && !DEMO);
@@ -275,7 +275,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- Config ---------- */
   const W = 540, H = 960, TAU = Math.PI * 2;
-  const ARENA = { x0: LEGEND ? 116 : 14, y0: 175, x1: W - 14, y1: H - 140 };
+  const ARENA = { x0: 14, y0: 100, x1: W - 14, y1: H - 24 };
   const CFG = {
     maxPlayers: 80,
     startPoints: 10,
