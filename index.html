@@ -86,11 +86,11 @@ body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visib
 #feed .fi.join{color:var(--cyan)}
 @keyframes fi{0%{opacity:0;transform:translateX(calc(var(--u)*-4))}6%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
-#banner{position:absolute;left:0;right:0;top:25%;z-index:35;pointer-events:none;text-align:center;padding:0 calc(var(--u)*4);opacity:0}
-#banner .m{font-family:var(--display);font-size:calc(var(--u)*8);line-height:1.1;color:var(--gold);text-shadow:0 calc(var(--u)*.8) 0 #7a2b00,0 0 calc(var(--u)*6) rgba(255,210,63,.6)}
+#banner{position:absolute;left:0;right:0;top:25%;z-index:35;pointer-events:none;text-align:center;padding:0 calc(var(--u)*4);opacity:0;mix-blend-mode:screen}
+#banner .m{font-family:var(--display);font-size:calc(var(--u)*8);line-height:1.1;color:var(--gold);text-shadow:0 calc(var(--u)*.8) 0 #7a2b00,0 0 calc(var(--u)*6) rgba(255,210,63,.6);opacity:.82}
 #banner .s{margin-top:calc(var(--u)*2);font-family:var(--display);font-size:calc(var(--u)*5);line-height:1.15;color:#fff;text-shadow:0 calc(var(--u)*.5) 0 #4a1a91,0 0 calc(var(--u)*5) rgba(255,61,129,.8)}
-#banner.big .m{font-size:calc(var(--u)*10.5)}
-#banner.mega .m{font-size:calc(var(--u)*12.5);color:#fff;text-shadow:0 calc(var(--u)*.8) 0 #a1310f,0 0 calc(var(--u)*9) rgba(255,210,63,.95)}
+#banner.big .m{font-size:calc(var(--u)*14);opacity:.8}
+#banner.mega .m{font-size:calc(var(--u)*17);color:#fff;text-shadow:0 calc(var(--u)*.8) 0 #a1310f,0 0 calc(var(--u)*9) rgba(255,210,63,.95);opacity:.78}
 #banner.on{animation:banner var(--bt,3s) ease-out}
 @keyframes banner{0%{opacity:0;transform:scale(1.9)}9%{opacity:1;transform:scale(1)}86%{opacity:1}100%{opacity:0}}
 
@@ -130,6 +130,14 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 @keyframes winbob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
 #winbig .wname{font-family:'Bungee',system-ui;font-size:calc(var(--u)*8);color:#fff;text-shadow:0 0 20px var(--gold),0 2px 6px rgba(0,0,0,.9);text-align:center;padding:0 calc(var(--u)*4)}
 #winbig .wsub{font-size:calc(var(--u)*3.6);color:var(--gold);font-weight:700}
+#giftpop{position:absolute;left:50%;top:18%;transform:translate(-50%,0) scale(.7);z-index:40;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s, transform .25s}
+#giftpop.on{opacity:.92;transform:translate(-50%,0) scale(1)}
+#giftpop img{width:calc(var(--u)*16);height:calc(var(--u)*16);border-radius:50%;border:3px solid var(--gold);box-shadow:0 0 30px rgba(255,210,63,.7);object-fit:cover}
+#giftpop .gpname{margin-top:6px;font-family:var(--display);font-size:calc(var(--u)*5.5);color:#fff;text-shadow:0 2px 0 #4a1a91,0 0 18px rgba(255,61,129,.85)}
+#giftpop .gpgift{font-size:calc(var(--u)*3);color:var(--gold);font-weight:700;opacity:.9}
+#cd10{position:absolute;right:calc(var(--u)*2);top:calc(var(--u)*2);z-index:36;pointer-events:none;font-family:var(--display);font-size:calc(var(--u)*5);color:#fff;opacity:0;text-shadow:0 0 12px rgba(255,61,129,.8);transition:opacity .15s}
+#cd10.on{opacity:.55}
+
 #dbg{position:absolute;left:0;right:0;bottom:0;z-index:90;margin:0;padding:4px 6px;font:10px/1.3 monospace;background:rgba(0,0,0,.8);color:#9fe8ff;pointer-events:none;max-height:18%;overflow:hidden;white-space:pre-wrap}
 
 #panel{position:absolute;left:calc(var(--u)*3);right:calc(var(--u)*3);bottom:calc(var(--u)*3);z-index:60;background:rgba(11,8,32,.95);border:1px solid rgba(255,255,255,.18);border-radius:calc(var(--u)*3);padding:calc(var(--u)*3);max-height:62%;overflow:auto}
@@ -177,17 +185,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     <div class="btns">
       <input id="coins" type="number" min="1" value="500" aria-label="Custom coin amount">
       <button data-a="custom">🎁 Send these coins</button>
-      <button data-a="testvoice">🗣 Test voice</button>
-      <button data-a="nextvoice">🔀 Next voice</button>
       <button data-a="intro">▶ Replay intro</button>
     </div>
-    <p class="note" id="vstat"></p>
     <div class="btns">
       <button data-a="add10">+10 viewers</button>
       <button data-a="add50">+50 viewers</button>
       <button data-a="bots" id="botsBtn" aria-pressed="true">🤖 Demo viewers</button>
-      <button data-a="voice" id="voiceBtn" aria-pressed="true">🗣 Voice on/off</button>
-      <button data-a="shoutmode" id="shoutBtn">🗣 Shout-outs: BIG gifts only</button>
     </div>
     <p class="note">Gift power is based on the coin value in the event, not the gift name. Prices in the buttons are approximate and TikTok changes them. You can also tap any bubble to give it a point.</p>
   </div>
@@ -221,6 +224,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     <div class="wname" id="winname"></div>
     <div class="wsub" id="winsub"></div>
   </div>
+  <div id="giftpop">
+    <img id="gpimg" alt="">
+    <div class="gpname" id="gpname"></div>
+    <div class="gpgift" id="gpgift"></div>
+  </div>
+  <div id="cd10"></div>
   <pre id="dbg" hidden></pre>
 </div>
 
@@ -344,6 +353,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const hat = (t, v) => noise(t, .04, v, 9000, 1.2);
   const sfx = {
     join()    { if (!ok('join', 60)) return; tone(523, 0, .08, 'sine', .14, 784); tone(784, .06, .13, 'sine', .12, 1175); },
+    tick(lo)  { tone(lo ? 1568 : 1175, 0, .07, 'square', .1, 2200); },
     tap()     { if (!ok('tap', 45)) return; const f = PENTA[TAPSEQ[tapI++ % TAPSEQ.length]]; tone(f, 0, .08, 'sine', .07); tone(f * 2, 0, .04, 'triangle', .025); },
     comment() { if (!ok('cm', 80)) return; tone(500, 0, .09, 'sine', .16, 900); tone(1000, .07, .08, 'triangle', .06); },
     share()   { [784, 988, 1175, 1568].forEach((f, i) => { tone(f, i * .06, .16, 'triangle', .15); tone(f * 2, i * .06, .08, 'sine', .05); }); hat(.24, .08); },
@@ -398,8 +408,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (k === 'm') { setMuted(!muted); feed(muted ? '🔇 sound off' : '🔊 sound on', 'join'); }
-    else if (k === 'v') { setVoice(!speech.on); feed(speech.on ? '🗣 voice on' : '🤐 voice off', 'join'); }
-    else if (k === 's') { setShoutAll(!speech.all); feed(speech.all ? '🗣 shout-outs: all gifts' : '🗣 shout-outs: big gifts only', 'join'); }
   });
   const hasTTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   const FEM = /(aria|jenny|samantha|zira|susan|hazel|libby|sonia|karen|tessa|moira|victoria|fiona|serena|allison|ava|joanna|salli|female|google us english)/i;
@@ -461,11 +469,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     return { spoken: line.replace('{n}', speakName(name)), shown: line.replace('{n}', name) };
   }
   function speak(text, coins) {
-    if (!hasTTS || !speech.on || muted || !unlocked) return;
-    speech.queue.push({ text, coins });
-    speech.queue.sort((a, b) => b.coins - a.coins);
-    speech.queue.length = Math.min(speech.queue.length, 3);
-    pumpSpeech();
+    return; // voice narration removed by request -- visuals + sound effects carry all cues now
   }
   function pumpSpeech() {
     if (speech.busy || !speech.queue.length) return;
@@ -589,6 +593,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     bannerEl.style.setProperty('--bt', (secs || 3) + 's');
     void bannerEl.offsetWidth; bannerEl.classList.add('on');
   }
+  let giftPopT = null;
+  function giftPop(p, giftName) {
+    const el = $('giftpop'), img = $('gpimg');
+    clearTimeout(giftPopT);
+    if (p.img) { img.src = p.img.src; img.style.display = ''; }
+    else if (p.fb) { img.src = p.fb.toDataURL(); img.style.display = ''; }
+    else img.style.display = 'none';
+    $('gpname').textContent = p.name;
+    $('gpgift').textContent = '🎁 ' + giftName;
+    el.classList.add('on');
+    giftPopT = setTimeout(() => el.classList.remove('on'), 3200);
+  }
   function renderLB() {
     const al = aliveList().sort((a, b) => b.points - a.points);
     $('empty').hidden = al.length > 0;
@@ -636,7 +652,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function intro() {
     showMotiv('💬 Comment · 👍 Like · 🔗 Share = points in the battle! 🌹 Send a Rose = a blade ⚔️');
-    speak('Welcome! Comment, like or share for points. Send a rose for a blade!', 0);
     round.num = 1; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
     $('roundbar').textContent = '⚔️ Round 1 · ' + fmtT(round.t) + ' left';
   }
@@ -651,12 +666,11 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function callLeader(prefix) {
     if (!leader) return;
-    const name = speakName(leader.name);
     showMotiv('👑 ' + leader.name + ' is in the lead! Comment, like, share or send a Rose to catch up.');
-    speak(prefix + name + ' is in the lead!', 0);
+    sfx.tick(false);
   }
   function roundTick(dt) {
-    const bar = $('roundbar');
+    const bar = $('roundbar'), cd = $('cd10');
     round.t -= dt;
     if (round.phase === 'play') {
       bar.classList.toggle('hot', round.t <= 10);
@@ -664,11 +678,19 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const half = CFG.roundSecs / 2;
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
-      if (round.t <= 10 && round.t > 9.9) speak('Ten seconds left! Send a rose now!', 0);
+      // small unobtrusive corner countdown for the last 10 seconds, one tick per second
+      if (round.t <= 10 && round.t > 0) {
+        const n = Math.ceil(round.t);
+        cd.classList.add('on');
+        if (cd.dataset.n !== String(n)) { cd.dataset.n = String(n); cd.textContent = '🌹 ' + n; sfx.tick(n <= 3); }
+      } else if (cd.classList.contains('on')) {
+        cd.classList.remove('on'); cd.dataset.n = '';
+      }
       if (round.t <= 0) endRound();
     } else {
       bar.classList.remove('hot');
       bar.textContent = '🔥 Next round in ' + fmtT(round.t) + '...';
+      if (cd.classList.contains('on')) { cd.classList.remove('on'); cd.dataset.n = ''; }
       if (round.t <= 0) startRound();
     }
   }
@@ -683,7 +705,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
       sfx.horn(); shake(3);
       feed('👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
-      speak(speakName(w.name) + ' wins the round! New round starting soon.', 100);
       setTimeout(() => $('winbig').classList.remove('on'), CFG.roundGap > 6 ? 5000 : (CFG.roundGap - 1) * 1000);
     } else {
       $('winname').textContent = '🌀 No champion yet';
@@ -695,7 +716,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function startRound() {
     round.num++; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
     showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!');
-    speak('Round ' + round.num + ' begins now!', 0);
     feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
 
@@ -768,8 +788,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
     const sh = shoutFor(p.name, coins);
     banner('🎁 ' + p.name + ' · ' + gname + '!', sh.shown, tier >= 5 ? 'mega' : tier >= 4 ? 'big' : '', tier >= 4 ? 4.6 : 3.4);
-    if (tier >= 4) sfx.horn();
-    if (speech.all || coins >= SHOUT_MIN) setTimeout(() => speak(sh.spoken, coins), 450);
+    if (tier >= 4) { sfx.horn(); giftPop(p, gname); }
 
     if (coins >= 100) { spot = { p, t: 2.6 }; startNuke(p); spark(p.x, p.y, '#fff', 40, 320, 1); }
     if (coins >= 1000) startMeteors(p, 5 + tier * 2);
@@ -1319,13 +1338,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     else if (a === 'comment') event({ type: 'comment', user, text: pick(says) });
     else if (a === 'share') event({ type: 'share', user });
     else if (a === 'custom') event({ type: 'gift', user, value: Math.max(1, Math.round(Number($('coins').value) || 1)) });
-    else if (a === 'testvoice') testVoice(user);
-    else if (a === 'nextvoice') { nextVoice(); testVoice(user); }
     else if (a === 'intro') intro();
     else if (a === 'add10' || a === 'add50') { const n = a === 'add10' ? 10 : 50; for (let i = 0; i < n; i++) setTimeout(() => joinPlayer('guest' + ri(100, 9999), null, true), i * 90); }
     else if (a === 'bots') { botsOn = !botsOn; b.setAttribute('aria-pressed', String(botsOn)); }
-    else if (a === 'voice') { setVoice(!speech.on); if (speech.on) speak('Voice on.', 100); }
-    else if (a === 'shoutmode') setShoutAll(!speech.all);
   });
   /* ---------- Host's own bubble (free, no gifts/coins involved) ---------- */
   const SELF_GROW = 40, SELF_GROW_BIG = 220;
@@ -1374,22 +1389,24 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const legendEl = $('legend');
   if (!LEGEND) legendEl.remove();
   else {
-    const h = document.createElement('div'); h.className = 'lh'; h.textContent = '🎁 SEND A GIFT'; legendEl.appendChild(h);
-    GIFTS.forEach(g => {
-      const row = document.createElement('div'); row.className = 'g'; row.dataset.coins = g.coins; row.dataset.gift = g.name;
-      const t = document.createElement('div'); t.className = 't';
-      const n = document.createElement('span'); n.textContent = g.icon + ' ' + g.name;
-      const c = document.createElement('span'); c.className = 'c'; c.textContent = g.coins.toLocaleString();
-      t.append(n, c);
-      const pw = document.createElement('div'); pw.className = 'p'; pw.textContent = describePower(g.coins);
-      row.append(t, pw); legendEl.appendChild(row);
-    });
-    const f = document.createElement('div'); f.className = 'ft';
-    f.textContent = 'Even 1 Rose = a blade! More coins = more power. 5+ 💣 · 20+ ⚡ · 100+ ☢ nuke · 1,000+ ☄';
-    legendEl.appendChild(f);
+    const h = document.createElement('div'); h.className = 'lh'; h.textContent = '💬 Comment · 👍 Like · 🔗 Share'; legendEl.appendChild(h);
+    const simple = document.createElement('div'); simple.className = 'g';
+    const st = document.createElement('div'); st.className = 't'; st.style.whiteSpace = 'normal';
+    st.textContent = 'All earn points!';
+    simple.appendChild(st);
+    const sp = document.createElement('div'); sp.className = 'p'; sp.textContent = '🌹 Send a Rose for a blade. Bigger gifts = bigger blades!';
+    simple.appendChild(sp);
+    legendEl.appendChild(simple);
+    // hidden test-only rows so TEST mode can still simulate any gift by tapping
+    if (TEST) {
+      GIFTS.forEach(g => {
+        const row = document.createElement('div'); row.className = 'g'; row.dataset.coins = g.coins; row.dataset.gift = g.name; row.style.display = 'none';
+        legendEl.appendChild(row);
+      });
+    }
     legendEl.addEventListener('click', e => {
       if (!TEST) return;
-      const row = e.target.closest('.g'); if (!row) return;
+      const row = e.target.closest('.g'); if (!row || !row.dataset.coins) return;
       initAudio();
       event({ type: 'gift', user: ($('who').value.trim() || 'viewer').slice(0, 16), value: Number(row.dataset.coins), gift: row.dataset.gift });
     });
