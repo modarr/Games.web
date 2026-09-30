@@ -1419,7 +1419,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---------- Filler fighters: the arena is never empty; they stay until >15 real viewers are playing ---------- */
   const FILL_ARG = Q.get('fillers');
   const FILL_ON = FILL_ARG !== '0';
-  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 12, 1, 20);
+  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 6, 1, 20);
   const FILL_REAL_MAX = 15;
   const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
   const FILL_SAYS = ['⚔️', '🔥', 'GG', 'let\'s go!', 'pop!', '😈', 'boom', 'watch out', '💥', 'come at me'];
