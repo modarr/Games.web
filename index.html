@@ -269,7 +269,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const LEGEND = false;   // side menu removed: arena uses the full screen
   const CHROMA = Q.get('chroma');
   const DEBUG = Q.get('debug') === '1';
-  const NOFX = Q.get('fx') === '0';
+  const NOFX = TEST ? Q.get('fx') === '0' : Q.get('fx') !== '1';
   const TIKFINITY = Q.get('tikfinity') === '1' || (!TEST && !Q.get('ws') && !DEMO);
   document.title = TEST ? 'Blade Bubbles TEST' : 'Blade Bubbles Overlay';
   const WS = Q.get('ws') || (TIKFINITY ? 'ws://127.0.0.1:' + (Q.get('port') || '21213') + '/' : '');
@@ -328,7 +328,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   let scale = 1;
   function resize() {
     const r = game.getBoundingClientRect();
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), 3);
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), 2);
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
     scale = cv.width / W;
   }
@@ -363,7 +363,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       else if (ac.state !== 'running') { const pr = ac.resume(); if (pr && pr.catch) pr.catch(() => {}); }
     } catch (e) {}
   }
-  audioKick(); setInterval(audioKick, 400);
+  audioKick();
+  const audioTimer = setInterval(() => { audioKick(); if (ac && ac.state === 'running') { clearInterval(audioTimer); setInterval(audioKick, 4000); } }, 400);
   ['visibilitychange', 'focus', 'pageshow'].forEach(ev => window.addEventListener(ev, audioKick));
   function tone(f, t, d, type = 'sine', v = 0.2, f2) {
     if (!ac || ac.state !== 'running') return;
@@ -1045,8 +1046,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
 
     // body bounce
-    for (let i = 0; i < alive.length; i++) for (let j = i + 1; j < alive.length; j++) {
-      const a = alive[i], b = alive[j];
+    const bAlive = alive.length > 45 ? alive.slice(0, 45) : alive;
+    for (let i = 0; i < bAlive.length; i++) for (let j = i + 1; j < bAlive.length; j++) {
+      const a = bAlive[i], b = bAlive[j];
       const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.r + b.r;
       if (d >= min || d < 0.001) continue;
       const nx = dx / d, ny = dy / d, ov = min - d, ma = a.r * a.r, mb = b.r * b.r, tot = ma + mb;
@@ -1237,7 +1239,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
 
   const motes = [];
-  for (let i = 0; i < 34; i++) motes.push({ x0: rf(0, W), y0: rf(0, H), r: rf(1.2, 3.4), s: rf(6, 20), ph: rf(0, TAU), h: rf(170, 320) });
+  for (let i = 0; i < (NOFX ? 0 : 34); i++) motes.push({ x0: rf(0, W), y0: rf(0, H), r: rf(1.2, 3.4), s: rf(6, 20), ph: rf(0, TAU), h: rf(170, 320) });
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
     const sx = shakeAmp > .1 ? rf(-shakeAmp, shakeAmp) : 0, sy = shakeAmp > .1 ? rf(-shakeAmp, shakeAmp) : 0;
