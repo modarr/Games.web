@@ -20,6 +20,8 @@
     chroma=00ff00   solid background colour for chroma-keying (hex, no #)
     tikfinity=1     connect to the TikFinity desktop app's local Events API  ws://127.0.0.1:21213/  (port=21213 to change)
     ws=ws://host:port   connect to any WebSocket that sends JSON events
+    fillers=N|0     filler fighters that keep the arena busy until >15 real viewers (default 12, 0 = off)
+    fx=0            turn off the extra glow effects (if a slow PC struggles)
     bots=0|1        demo viewers off/on (default: on, but off when tikfinity/ws is used)
     voice=0         turn off spoken shout-outs
     debug=1         show the last raw messages received (useful to check field names)
@@ -267,6 +269,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const LEGEND = false;   // side menu removed: arena uses the full screen
   const CHROMA = Q.get('chroma');
   const DEBUG = Q.get('debug') === '1';
+  const NOFX = Q.get('fx') === '0';
   const TIKFINITY = Q.get('tikfinity') === '1' || (!TEST && !Q.get('ws') && !DEMO);
   document.title = TEST ? 'Blade Bubbles TEST' : 'Blade Bubbles Overlay';
   const WS = Q.get('ws') || (TIKFINITY ? 'ws://127.0.0.1:' + (Q.get('port') || '21213') + '/' : '');
@@ -320,6 +323,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const fmt = n => n >= 10000 ? (n / 1000).toFixed(0) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n));
   const game = $('game'), cv = $('cv'), ctx = cv.getContext('2d');
+  { const _arc = ctx.arc.bind(ctx); ctx.arc = (x, y, r, a, b, c) => _arc(x, y, r > 0 ? r : 0, a, b, c); }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let scale = 1;
   function resize() {
@@ -351,8 +355,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(ev =>
     document.addEventListener(ev, () => { unlocked = true; primeSpeech(); if (!ac) initAudio(); else if (ac.state !== 'running') ac.resume(); }, true));
 
+  // Auto-start: keep trying to create/resume the audio engine. Works by itself wherever autoplay is allowed
+  // (TikTok LIVE Studio browser source, OBS, or Chrome with sound set to Allow); a click also unlocks it anywhere else.
+  function audioKick() {
+    try {
+      if (!ac) initAudio();
+      else if (ac.state !== 'running') { const pr = ac.resume(); if (pr && pr.catch) pr.catch(() => {}); }
+    } catch (e) {}
+  }
+  audioKick(); setInterval(audioKick, 400);
+  ['visibilitychange', 'focus', 'pageshow'].forEach(ev => window.addEventListener(ev, audioKick));
   function tone(f, t, d, type = 'sine', v = 0.2, f2) {
-    if (!ac) return;
+    if (!ac || ac.state !== 'running') return;
     const o = ac.createOscillator(), g = ac.createGain(), s = ac.currentTime + t;
     o.type = type; o.frequency.setValueAtTime(f, s);
     if (f2) o.frequency.exponentialRampToValueAtTime(f2, s + d);
@@ -360,7 +374,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     o.connect(g); g.connect(master); o.start(s); o.stop(s + d + 0.03);
   }
   function noise(t, d, v, freq, q) {
-    if (!ac || !noiseBuf) return;
+    if (!ac || !noiseBuf || ac.state !== 'running') return;
     const s = ac.currentTime + t;
     const src = ac.createBufferSource(); src.buffer = noiseBuf;
     const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q || 1;
@@ -569,7 +583,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     p.shield = CFG.shield; p.pulse = 1; p.flash = 0; p.cd = {}; p.commentT = 0; p.lastFloat = 0;
     p.stun = 0; p.mega = 0; p.glow = 0; p.bombCd = 1.5; p.zapCd = 2;
   }
-  function joinPlayer(name, avatar, bot) {
+  function joinPlayer(name, avatar, bot, silent) {
     const key = name.toLowerCase();
     let p = roster.get(key);
     if (p) { if (avatar) setAvatar(p, avatar); return p; }
@@ -583,8 +597,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
     roster.set(key, p); players.push(p);
-    feed('👋 ' + name + ' joined', 'join');
-    sfx.join();
+    if (!silent) { feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
     return p;
   }
@@ -668,7 +681,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function motivate() {
     const al = aliveList().sort((a, b) => b.points - a.points);
     if (!al.length) return;
-    const pk = { leader: al[0].name, under: al[al.length - 1].name, rand: pick(al).name };
+    const rl = al.filter(q => !q.filler), pl = rl.length ? rl : al;
+    const pk = { leader: al[0].name, under: pl[pl.length - 1].name, rand: pick(pl).name };
     motivIdx = (motivIdx + 1) % MOTIV.length;
     showMotiv(MOTIV[motivIdx](pk));
   }
@@ -759,6 +773,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const name = String(e.user).slice(0, 16);
     const type = String(e.type || 'tap').toLowerCase();
     let p = roster.get(name.toLowerCase());
+    if (p && p.filler && !e.bot) p.filler = false;
     if (!p) { p = joinPlayer(name, e.avatar, e.bot); if (!p) return; }
     else {
       if (e.avatar) setAvatar(p, e.avatar);
@@ -852,7 +867,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     event(m);
   }
   function setConn(t) { if (Q.get('status') === '0') return; const el = $('conn'); el.textContent = t; el.hidden = !t; }
-  let botsOn = Q.has('bots') ? Q.get('bots') !== '0' : (TEST ? !WS : DEMO);
+  let botsOn = Q.has('bots') ? Q.get('bots') !== '0' : (TEST ? false : DEMO);
   if (WS) {
     const connect = () => {
       try {
@@ -1128,6 +1143,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function drawPlayer(p) {
     const r = p.r * (1 + p.pulse * .08), hue = p.hue;
     ctx.save(); ctx.translate(p.x, p.y);
+    if (!NOFX) {
+      const lead = p === leader, ah = lead ? 45 : hue, ar = r * (lead ? 2.1 : 1.65);
+      const ag = ctx.createRadialGradient(0, 0, r * .85, 0, 0, ar);
+      ag.addColorStop(0, 'hsla(' + ah + ',100%,62%,' + (lead ? .42 : .24) + ')'); ag.addColorStop(1, 'hsla(' + ah + ',100%,62%,0)');
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(0, 0, ar, 0, TAU); ctx.fill(); ctx.restore();
+    }
 
     // mega / glow aura
     if (p.mega > 0 || p.glow > 0) {
@@ -1215,12 +1236,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ctx.restore();
   }
 
+  const motes = [];
+  for (let i = 0; i < 34; i++) motes.push({ x0: rf(0, W), y0: rf(0, H), r: rf(1.2, 3.4), s: rf(6, 20), ph: rf(0, TAU), h: rf(170, 320) });
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
     const sx = shakeAmp > .1 ? rf(-shakeAmp, shakeAmp) : 0, sy = shakeAmp > .1 ? rf(-shakeAmp, shakeAmp) : 0;
     ctx.setTransform(scale, 0, 0, scale, sx * scale, sy * scale);
 
-    ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(53,224,255,.35)'; ctx.shadowColor = 'rgba(53,224,255,.6)'; ctx.shadowBlur = 12;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    const ah = (time * 24) % 360;
+    const agr = ctx.createLinearGradient(ARENA.x0, ARENA.y0, ARENA.x1, ARENA.y1);
+    agr.addColorStop(0, 'hsla(' + ah + ',100%,65%,.6)'); agr.addColorStop(.5, 'hsla(' + (ah + 90) + ',100%,65%,.3)'); agr.addColorStop(1, 'hsla(' + (ah + 180) + ',100%,65%,.6)');
+    ctx.save(); ctx.lineWidth = 2.5; ctx.strokeStyle = agr; ctx.shadowColor = 'hsla(' + ah + ',100%,60%,.7)'; ctx.shadowBlur = 14;
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0, 28); else ctx.rect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0);
     ctx.stroke(); ctx.restore();
@@ -1258,6 +1285,19 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     ctx.globalAlpha = 1;
 
+    if (!NOFX) {
+      const aw = ARENA.x1 - ARENA.x0, ah2 = ARENA.y1 - ARENA.y0;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const m of motes) {
+        const x = ARENA.x0 + ((m.x0 + Math.sin(time * .5 + m.ph) * 14) % aw + aw) % aw, y = ARENA.y1 - ((m.y0 + time * m.s) % ah2);
+        const a = .07 + .07 * Math.sin(time * 1.3 + m.ph);
+        ctx.fillStyle = 'hsla(' + m.h + ',100%,70%,' + a + ')';
+        ctx.beginPath(); ctx.arc(x, y, m.r * 2.4, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'hsla(' + m.h + ',100%,85%,' + a * 2 + ')';
+        ctx.beginPath(); ctx.arc(x, y, m.r, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
     const al = aliveList().sort((a, b) => a.r - b.r);
     for (const p of al) drawPlayer(p);
 
@@ -1286,11 +1326,14 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.beginPath(); b.pts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.stroke();
       ctx.shadowBlur = 0;
     }
+    ctx.save(); if (!NOFX) ctx.globalCompositeOperation = 'lighter';
     for (const q of parts) {
-      ctx.globalAlpha = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.color;
+      const pa = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.color;
+      if (!NOFX) { ctx.globalAlpha = pa * .25; ctx.beginPath(); ctx.arc(q.x, q.y, q.size * 2.6, 0, TAU); ctx.fill(); }
+      ctx.globalAlpha = pa;
       ctx.beginPath(); ctx.arc(q.x, q.y, q.size, 0, TAU); ctx.fill();
     }
-    ctx.globalAlpha = 1;
+    ctx.restore(); ctx.globalAlpha = 1;
     for (const f of floats) {
       const k = f.t;
       ctx.globalAlpha = k < .7 ? 1 : 1 - (k - .7) / .3;
@@ -1306,7 +1349,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(.033, (now - last) / 1000); last = now;
-    update(dt); draw(); requestAnimationFrame(frame);
+    try { update(dt); draw(); } catch (err) { dbg('frame error: ' + err.message); try { ctx.setTransform(1, 0, 0, 1, 0, 0); } catch (e2) {} }
+    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
@@ -1370,6 +1414,93 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   botTick();
 
+  /* ---------- Filler fighters: the arena is never empty; they stay until >15 real viewers are playing ---------- */
+  const FILL_ARG = Q.get('fillers');
+  const FILL_ON = FILL_ARG !== '0';
+  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 12, 1, 20);
+  const FILL_REAL_MAX = 15;
+  const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
+  const FILL_SAYS = ['⚔️', '🔥', 'GG', 'let\'s go!', 'pop!', '😈', 'boom', 'watch out', '💥', 'come at me'];
+  const FILL_BLADES = [0, 1, 1, 2, 2, 3, 4];
+  let fillRetired = false, fillSeq = 0, fillReady = false;
+  const fillers = () => players.filter(q => q.filler && q.alive);
+  const realCount = () => players.filter(q => q.alive && !q.filler).length;
+  function fillerName() {
+    for (let i = 0; i < 60; i++) {
+      const n = pick(FILL_NAMES) + (fillSeq++ >= FILL_NAMES.length ? ri(2, 99) : '');
+      if (!roster.has(n.toLowerCase())) return n;
+    }
+    return 'Fighter' + ri(100, 999);
+  }
+  function spawnFiller(blades, pts) {
+    const p = joinPlayer(fillerName(), null, true, true);
+    if (!p) return null;
+    p.filler = true;
+    p.points = pts || rf(12, 55);
+    p.r = p.tr = radFor(p.points) * sizeScale;
+    p.blades = blades != null ? blades : pick(FILL_BLADES);
+    p.pulse = 2;
+    spark(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 12, 160, .6);
+    return p;
+  }
+  function retireFiller(p) {
+    p.alive = false; p.diedAt = time;
+    spark(p.x, p.y, '#fff', 14, 170, .6); ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', p.r + 30, .5, 3);
+  }
+  // a growth moment that looks and sounds like a gift, but shows no fake gift banner or message
+  function fillerBoost(p, lvl) {
+    const c = 'hsl(' + p.hue + ',100%,70%)', before = p.blades;
+    addPoints(p, [0, 18, 40, 90][lvl]);
+    p.gifted += [0, 1, 20, 100][lvl];
+    p.blades = Math.min(8, p.blades + (lvl >= 3 ? 2 : 1));
+    if (lvl >= 2) { p.bombs = Math.min(4, p.bombs + 1); p.glow = 5; }
+    if (lvl >= 3) { p.lightning = Math.min(3, p.lightning + 1); p.mega = 10; }
+    p.shield = Math.max(p.shield, 1 + lvl * .4);
+    p.pulse = 2.5;
+    ring(p.x, p.y, c, p.r + 40 + lvl * 22, .75, 3 + lvl);
+    ring(p.x, p.y, '#ffd23f', p.r + 26 + lvl * 14, .55, 3);
+    spark(p.x, p.y, '#ffd23f', 10 + lvl * 8, 190 + lvl * 30, .8);
+    if (p.blades > before) floater(p.x, p.y - p.r - 10, '+' + (p.blades - before) + ' ⚔', '#35e0ff', 16 + lvl * 2);
+    sfx.gift(lvl <= 1 ? 1 : lvl === 2 ? 2 : 3); shake(.5 + lvl * .8);
+  }
+  function fillerAct() {
+    const fl = fillers(); if (!fl.length) return;
+    const p = pick(fl), r = Math.random(), x = p.x, y = p.y - p.r;
+    if (r < .60) {
+      const n = ri(1, 4); addPoints(p, n);
+      p.vx += Math.cos(p.heading) * 20; p.vy += Math.sin(p.heading) * 20;
+      if (Math.random() < .35) floater(x, y, '+' + n, '#fff', 13);
+      sfx.tap();
+    } else if (r < .76) {
+      addPoints(p, CFG.pts.comment); p.text = pick(FILL_SAYS); p.commentT = 2.4;
+      floater(x, y - 10, '+' + CFG.pts.comment, '#9fe8ff', 15); sfx.comment();
+    } else if (r < .83) {
+      addPoints(p, CFG.pts.share); floater(x, y - 10, '+' + CFG.pts.share + ' 🔗', '#ffd23f', 18);
+      ring(p.x, p.y, '#ffd23f', p.r + 45, .5, 3); sfx.share();
+    } else if (r < .96) fillerBoost(p, 1);
+    else if (r < .99) fillerBoost(p, 2);
+    else fillerBoost(p, 3);
+  }
+  if (FILL_ON) {
+    const start = [1, 1, 2, 2, 3, 4, 0, 0, 1, 2, 0, 3, 1, 2, 0, 1, 2, 3, 0, 1];
+    for (let i = 0; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
+    setTimeout(() => { fillReady = true; }, 250 + FILL_N * 160 + 150);
+    (function fillerLoop() { if (!document.hidden) fillerAct(); setTimeout(fillerLoop, rf(170, 330)); })();
+    setInterval(() => {
+      const real = realCount();
+      if (real > FILL_REAL_MAX) fillRetired = true; else if (real <= FILL_REAL_MAX - 3) fillRetired = false;
+      const fl = fillers();
+      if (fillRetired) { if (fl.length) retireFiller(fl.sort((a, b) => a.points - b.points)[0]); }
+      else if (fillReady) for (let k = Math.min(2, FILL_N - fl.length); k > 0; k--) spawnFiller();
+      for (let i = players.length - 1; i >= 0; i--) {
+        const q = players[i];
+        if (q.filler && !q.alive && time - q.diedAt > 4) { roster.delete(q.key); players.splice(i, 1); }
+      }
+    }, 400);
+  }
+  window.TapArena.audio = () => (ac ? ac.state : 'none');
+  window.TapArena.stats = () => ({ real: realCount(), fillers: fillers().length });
+
   /* ---------- Controls ---------- */
   GIFTS.forEach(g => {
     const b = document.createElement('button');
@@ -1379,7 +1510,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   });
   $('start').addEventListener('click', () => { initAudio(); $('overlay').style.display = 'none'; sfx.join(); setTimeout(intro, 700); });
   $('gear').addEventListener('click', e => { e.stopPropagation(); $('panel').hidden = !$('panel').hidden; });
-  $('voiceBtn').setAttribute('aria-pressed', String(speech.on)); setShoutAll(speech.all);
+  setShoutAll(speech.all);
   $('panel').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     initAudio();
