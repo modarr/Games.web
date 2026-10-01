@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Blade Bubbles FUN</title>
+<title>Blade Bubbles Live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
 <!--
-  BLADE BUBBLES  (TikTok Live overlay game)   build: fun
+  BLADE BUBBLES  (TikTok Live overlay game)   build: studio
     overlay build: clean stream overlay. Auto-connects to the TikFinity desktop app (ws://127.0.0.1:21213/). Add demo=1 to preview with fake viewers.
     test build:    same game plus a test panel (send fake gifts / taps / comments, test the voice).
 
@@ -172,23 +172,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #overlay .rules{display:grid;gap:calc(var(--u)*1.5);font-size:calc(var(--u)*3.5);font-weight:700;text-align:left;max-width:calc(var(--u)*80)}
 #start{font-family:var(--display);font-size:calc(var(--u)*6.5);color:#02141a;background:linear-gradient(180deg,#8ff0ff,#1cc4e6);border:0;border-radius:calc(var(--u)*3);padding:calc(var(--u)*4) calc(var(--u)*9);cursor:pointer;box-shadow:0 calc(var(--u)*1.2) 0 #0b5b73,0 0 calc(var(--u)*6) rgba(53,224,255,.45)}
 #start:active{transform:translateY(calc(var(--u)*.8));box-shadow:0 calc(var(--u)*.4) 0 #0b5b73}
-
-/* ===== FUN MODE ===== */
-body.fun #game{width:min(100vw,calc(100vh*9/16));height:min(100vh,calc(100vw*16/9));flex:none}
-@supports (height:100dvh){ body.fun #game{width:min(100vw,calc(100dvh*9/16));height:min(100dvh,calc(100vw*16/9))} }
-body.fun #self,body.fun #selfpanel,body.fun #howto,body.fun #empty{display:none!important}
-body.fun #feed{bottom:calc(var(--u)*30)}
-body.fun #motiv{bottom:calc(var(--u)*36)}
-#fbar{position:absolute;left:calc(var(--u)*2);right:calc(var(--u)*2);bottom:calc(var(--u)*2);z-index:60;display:grid;grid-template-columns:repeat(6,1fr);gap:calc(var(--u)*1.2)}
-.fb{position:relative;overflow:hidden;height:calc(var(--u)*14);padding:0;border-radius:calc(var(--u)*2.4);border:2px solid hsla(var(--h),100%,72%,.75);background:linear-gradient(180deg,hsla(var(--h),90%,56%,.95),hsla(var(--h),90%,30%,.98));color:#fff;font-family:var(--display);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 calc(var(--u)*.8) 0 hsla(var(--h),80%,16%,1),0 0 calc(var(--u)*3) hsla(var(--h),100%,60%,.4);touch-action:manipulation;user-select:none;-webkit-user-select:none}
-.fb b{font-size:calc(var(--u)*6.2);line-height:1;font-weight:400;text-shadow:0 2px 0 rgba(0,0,0,.35)}
-.fb span{font-size:calc(var(--u)*2.05);letter-spacing:.02em;text-shadow:0 1px 0 rgba(0,0,0,.4)}
-.fb:active{transform:translateY(calc(var(--u)*.6))}
-.fb .cdf{position:absolute;left:0;right:0;bottom:0;height:var(--cd,0%);background:rgba(0,0,0,.6);pointer-events:none}
-#fme{position:absolute;left:calc(var(--u)*2);right:calc(var(--u)*2);bottom:calc(var(--u)*18);z-index:58;pointer-events:none;background:rgba(11,8,32,.72);border:1px solid rgba(255,255,255,.2);border-radius:calc(var(--u)*2.4);padding:calc(var(--u)*1.2) calc(var(--u)*2.4)}
-#fme .l1{display:flex;justify-content:space-between;gap:calc(var(--u)*2);font-weight:800;font-size:calc(var(--u)*3);color:#8ff0ff;white-space:nowrap}
-#fme .bar{height:calc(var(--u)*1.4);border-radius:99px;background:rgba(255,255,255,.15);margin-top:calc(var(--u)*.8);overflow:hidden}
-#fme .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#35e0ff,#ff3d81,#ffd23f)}
 </style>
 </head>
 <body>
@@ -279,26 +262,25 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
 
   /* ---------- URL options ---------- */
   const Q = new URLSearchParams(location.search);
-  const MODE = 'fun';
+  const MODE = 'studio';
   const TEST = MODE === 'test';
-  const FUN = MODE === 'fun';
-  const OVERLAY = FUN ? false : (TEST ? Q.get('overlay') === '1' : Q.get('overlay') !== '0');
-  const DEMO = FUN ? false : (TEST ? Q.get('demo') !== '0' : Q.get('demo') === '1');
+  const STUDIO = MODE === 'studio';
+  const OVERLAY = TEST ? Q.get('overlay') === '1' : Q.get('overlay') !== '0';
+  const DEMO = TEST ? Q.get('demo') !== '0' : Q.get('demo') === '1';
   const LEGEND = false;   // side menu removed: arena uses the full screen
   const CHROMA = Q.get('chroma');
   const DEBUG = Q.get('debug') === '1';
-  const NOFX = (TEST || FUN) ? Q.get('fx') === '0' : Q.get('fx') !== '1';
-  const TIKFINITY = Q.get('tikfinity') === '1' || (!TEST && !FUN && !Q.get('ws') && !DEMO);
-  document.title = FUN ? 'Blade Bubbles FUN' : TEST ? 'Blade Bubbles TEST' : 'Blade Bubbles Overlay';
+  const NOFX = TEST ? Q.get('fx') === '0' : Q.get('fx') !== '1';
+  const TIKFINITY = Q.get('tikfinity') === '1' || (!TEST && !Q.get('ws') && !DEMO);
+  document.title = TEST ? 'Blade Bubbles TEST' : 'Blade Bubbles Overlay';
   const WS = Q.get('ws') || (TIKFINITY ? 'ws://127.0.0.1:' + (Q.get('port') || '21213') + '/' : '');
   if (OVERLAY) document.body.classList.add('overlay');
-  if (FUN) document.body.classList.add('fun');
   if (CHROMA && /^[0-9a-f]{3,6}$/i.test(CHROMA)) { document.documentElement.style.background = '#' + CHROMA; document.body.style.background = '#' + CHROMA; document.getElementById('game').style.background = '#' + CHROMA; }
 
+  const STUDIO_PTS = 96;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
   /* ---------- Config ---------- */
   const W = 540, H = 960, TAU = Math.PI * 2;
-  const ARENA = { x0: 14, y0: 100, x1: W - 14, y1: H - (FUN ? 160 : 24) };
-  const GOD_FLOOR = 6;   // fun mode: the host bubble never drops below this many points, so it can never be popped
+  const ARENA = { x0: 14, y0: 100, x1: W - 14, y1: H - 24 };
   const CFG = {
     maxPlayers: 80,
     startPoints: 10,
@@ -348,8 +330,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   let scale = 1;
   function resize() {
     const r = game.getBoundingClientRect();
-    if (FUN) document.documentElement.style.setProperty('--w', r.width + 'px');
-    const dpr = FUN ? Math.min(Math.max(window.devicePixelRatio || 1, 1), 1.6) : Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), 2);
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), 2);
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
     scale = cv.width / W;
   }
@@ -561,7 +542,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     return r;
   }
   const bladeLen = p => p.r * 0.6 + 10;
-  const mult = p => Math.min(3.5, 1 + 0.5 * Math.log10(1 + (p.gifted || 0))) * (p.dbl > 0 ? 2 : 1);
+  const mult = p => Math.min(3.5, 1 + 0.5 * Math.log10(1 + (p.gifted || 0)));
   const aliveList = () => players.filter(p => p.alive);
   // tiers tuned for small streams: even 1 coin (a Rose) gives a blade
   const tierOf = c => c >= 5000 ? 6 : c >= 1000 ? 5 : c >= 100 ? 4 : c >= 20 ? 3 : c >= 5 ? 2 : 1;
@@ -618,6 +599,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     makeFallback(p, bot ? pick(FACES) : null);
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
+    if (STUDIO && !bot) { p.points = STUDIO_PTS; p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; }
     roster.set(key, p); players.push(p);
     if (!silent) { feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
@@ -668,10 +650,9 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     lbEl.textContent = '';
     const hd = document.createElement('div'); hd.className = 'hd'; hd.textContent = '👥 ' + al.length + ' alive';
     lbEl.appendChild(hd);
-    const lbList = al.slice(0, 3); if (FUN && host && host.alive && al.indexOf(host) >= 3) lbList.push(host);
-    lbList.forEach((p) => {
-      const row = document.createElement('div'); row.className = 'row'; if (FUN && p === host) row.style.color = '#8ff0ff';
-      const rank = document.createElement('span'); rank.textContent = al.indexOf(p) + 1;
+    al.slice(0, 3).forEach((p, i) => {
+      const row = document.createElement('div'); row.className = 'row';
+      const rank = document.createElement('span'); rank.textContent = i + 1;
       const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = 'hsl(' + p.hue + ',90%,60%)';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = p.name;
       const pt = document.createElement('span'); pt.className = 'pt'; pt.textContent = fmt(p.points);
@@ -689,14 +670,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   }
 
   /* ---------- Minute motivation ---------- */
-  const MOTIV = FUN ? [
-    n => '⚡ Tap the screen to charge up! ' + n.leader + ' is in front.',
-    n => '🔥 ' + n.rand + ' is climbing... time for REVENGE?',
-    () => '🌪 Hit STORM and watch the sky go wild!',
-    () => '🎆 Feeling fancy? Smash the BEAUTY button!',
-    n => '👑 ' + n.leader + ' leads the board. Catch them!',
-    () => '×2 DOUBLE turns every tap into double power!'
-  ] : [
+  const MOTIV = [
     n => '🌹 One little Rose gives ' + n.rand + ' a blade to fight back. Be sweet, send a Rose!',
     n => '💖 ' + n.under + ' needs some love! Send a Rose and watch them fight back.',
     n => '👑 ' + n.leader + ' is leading! Comment, like and share to catch up.',
@@ -720,7 +694,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     round.num = 1; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
     $('roundbar').textContent = '⚔️ Round 1 · ' + fmtT(round.t) + ' left';
   }
-  setTimeout(() => { motivate(); setInterval(motivate, FUN ? 30000 : 60000); }, FUN ? 15000 : 30000);
+  setTimeout(() => { motivate(); setInterval(motivate, 60000); }, 30000);
   const HOW = ['💬 Comment · 👍 Like · 🔗 Share = points and growth', '🌹 Send a Rose = a blade ⚔️ to fight with!'];
   let howI = 0; const howEl = $('howto');
   const howTick = () => { howEl.textContent = HOW[howI++ % HOW.length]; };
@@ -789,7 +763,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   }
   function startRound() {
     round.num++; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
-    showMotiv('⚔️ Round ' + round.num + ' has begun!' + (FUN ? ' ⚡ Tap for power!' : ' 🌹 Send a Rose for a blade!'));
+    showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!');
     feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
 
@@ -810,7 +784,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
       if (!p.alive) {
         if (time - p.diedAt < 2.5) return;
         p.blades = 0; p.bombs = 0; p.lightning = 0; p.gifted = 0;
-        spawnPlayer(p, 8);
+        spawnPlayer(p, STUDIO ? STUDIO_PTS : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; }
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
@@ -924,7 +898,6 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     return best;
   }
   function kill(v, a) {
-    if (v.god) return;
     v.alive = false; v.diedAt = time;
     const c = 'hsl(' + v.hue + ',95%,65%)';
     spark(v.x, v.y, c, 34, 300, .9); spark(v.x, v.y, '#fff', 12, 220, .5);
@@ -940,14 +913,8 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   function hurt(v, dmg, a, mode) {
     if (!v.alive) return;
     dmg = Math.min(dmg, v.points); if (dmg <= 0) return;
-    if (v.god) {
-      if (a && a !== v) { v.lastAtk = a; v.lastAtkT = time; }
-      if (v.boss) dmg *= .25;
-      dmg = Math.min(dmg, Math.max(0, v.points - GOD_FLOOR));
-      if (dmg <= 0) { v.flash = .12; if (ok('safe', 500)) floater(v.x, v.y - v.r * .5, '🛡 safe', '#9fe8ff', 15); return; }
-    }
     v.points -= dmg; v.flash = .12;
-    if (a && a !== v && a.alive) a.points += dmg * (mode === 'blade' ? CFG.steal : CFG.steal * .5) * (a.boss ? .4 : 1);
+    if (a && a !== v && a.alive) a.points += dmg * (mode === 'blade' ? CFG.steal : CFG.steal * .5);
     floater(v.x + rf(-8, 8), v.y - v.r * .5, '-' + Math.max(1, Math.round(dmg)), '#ff5c8a', mode === 'blade' ? 14 : 18);
     if (v.points <= .5) kill(v, a);
   }
@@ -1051,10 +1018,10 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     const alive = aliveList();
     sizeScale = clamp(1 - (alive.length - CFG.crowdStart) * CFG.crowdStep, CFG.crowdMin, 1);
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
-    if (FUN) funTick(dt, alive);
 
     for (const p of alive) {
-      p.tr = radFor(p.points) * sizeScale * (p.boss ? 1 + Math.min(.6, time / 300) : 1);
+      if (STUDIO && !p.filler) p.points = Math.max(4, p.points - dt * (0.9 + p.points * 0.008));
+      p.tr = radFor(p.points) * sizeScale;
       p.r += clamp(p.tr - p.r, -CFG.shrinkRate * dt, CFG.growRate * dt);   // growth is rate-limited
       p.pulse = Math.max(0, p.pulse - dt * 4); p.flash = Math.max(0, p.flash - dt);
       p.shield = Math.max(0, p.shield - dt); p.commentT -= dt;
@@ -1339,7 +1306,6 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     }
     const al = aliveList().sort((a, b) => a.r - b.r);
     for (const p of al) drawPlayer(p);
-    if (FUN) { drawStorm(); drawHostMark(); }
 
     // spotlight: dim everything, then redraw the gifter on top
     if (spot) {
@@ -1396,7 +1362,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
 
   /* ---------- Tap a bubble directly (host testing) ---------- */
   cv.addEventListener('pointerdown', e => {
-    if (OVERLAY || FUN) return;
+    if (OVERLAY) return;
     e.preventDefault();
     const r = cv.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
@@ -1419,7 +1385,6 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     floater(p.x, p.y - p.r - 10, '+1 ⚔', '#35e0ff', 18); ring(p.x, p.y, '#35e0ff', p.r + 30, .4, 3); sfx.gift(2);
   }
   cv.addEventListener('pointerdown', e => {
-    if (FUN) return;
     holdTarget = findBubbleAt(e.clientX, e.clientY);
     if (!holdTarget) return;
     clearTimeout(holdTimer);
@@ -1458,26 +1423,25 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   /* ---------- Filler fighters: the arena is never empty; they stay until >15 real viewers are playing ---------- */
   const FILL_ARG = Q.get('fillers');
   const FILL_ON = FILL_ARG !== '0';
-  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 9, 1, 20);
-  const FILL_REAL_MAX = 15;
+  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 6, 1, 20);
+  const FILL_REAL_MAX = STUDIO ? 99999 : 15;
   const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
   const FILL_SAYS = ['⚔️', '🔥', 'GG', 'let\'s go!', 'pop!', '😈', 'boom', 'watch out', '💥', 'come at me'];
   const FILL_BLADES = [0, 1, 1, 2, 2, 3, 4];
-  let fillRetired = false, fillSeq = 0, fillReady = false, faceI = ri(0, 15);
+  let fillRetired = false, fillSeq = 0, fillReady = false;
   const fillers = () => players.filter(q => q.filler && q.alive);
   const realCount = () => players.filter(q => q.alive && !q.filler).length;
   function fillerName() {
-    if (FUN) { const free = RIVAL_NAMES.filter(n => !roster.has(n.toLowerCase())); if (free.length) return pick(free); }
     for (let i = 0; i < 60; i++) {
       const n = pick(FILL_NAMES) + (fillSeq++ >= FILL_NAMES.length ? ri(2, 99) : '');
       if (!roster.has(n.toLowerCase())) return n;
     }
     return 'Fighter' + ri(100, 999);
   }
-  function spawnFiller(blades, pts, forceName) {
-    const p = joinPlayer(forceName || fillerName(), null, true, true);
+  function spawnFiller(blades, pts) {
+    const p = joinPlayer(fillerName(), null, true, true);
     if (!p) return null;
-    p.filler = true; if (FUN && fillReady) { feed('👋 ' + p.name + ' joined the fight', 'join'); sfx.join(); } if (FUN) funFace(p); else makeFallback(p, FACES[faceI++ % FACES.length]);
+    p.filler = true;
     p.points = pts || rf(12, 55);
     p.r = p.tr = radFor(p.points) * sizeScale;
     p.blades = blades != null ? blades : pick(FILL_BLADES);
@@ -1525,7 +1489,7 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
   }
   if (FILL_ON) {
     const start = [1, 1, 2, 2, 3, 4, 0, 0, 1, 2, 0, 3, 1, 2, 0, 1, 2, 3, 0, 1];
-    for (let i = 0; i < FILL_N - (FUN ? 1 : 0); i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
+    for (let i = 0; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
     setTimeout(() => { fillReady = true; }, 250 + FILL_N * 160 + 150);
     (function fillerLoop() { if (!document.hidden) fillerAct(); setTimeout(fillerLoop, rf(170, 330)); })();
     setInterval(() => {
@@ -1609,329 +1573,6 @@ body.fun #motiv{bottom:calc(var(--u)*36)}
     else if (a === 'blade') { p.blades = Math.min(CFG.maxBlades, p.blades + 1); p.shield = Math.max(p.shield, 1); floater(p.x, p.y - p.r - 10, '+1 ⚔', '#35e0ff', 18); sfx.gift(2); }
     else if (a === 'reset') { p.blades = 0; p.bombs = 0; p.lightning = 0; p.gifted = 0; spawnPlayer(p, CFG.startPoints); feed('🔄 ' + p.name + ' reset', 'join'); }
   });
-
-
-  /* ---------- Flags drawn in code (emoji flags don't show on Windows) ---------- */
-  const FLAGS = {
-    ps: { name: 'Palestine', d(g, S) { band(g, S, ['#000', '#fff', '#0a8a3a'], 'h'); g.fillStyle = '#d0202e'; g.beginPath(); g.moveTo(0, 0); g.lineTo(S * .46, S / 2); g.lineTo(0, S); g.closePath(); g.fill(); } },
-    il: { name: 'Israel', d(g, S) {
-      g.fillStyle = '#fff'; g.fillRect(0, 0, S, S); g.fillStyle = '#0038b8'; g.fillRect(0, S * .13, S, S * .12); g.fillRect(0, S * .75, S, S * .12);
-      g.strokeStyle = '#0038b8'; g.lineWidth = S * .035; g.lineJoin = 'miter';
-      for (const up of [1, -1]) { g.beginPath(); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 * up + i * TAU / 3; const x = S / 2 + Math.cos(a) * S * .21, y = S / 2 + Math.sin(a) * S * .21; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.stroke(); }
-    } },
-    in: { name: 'India', d(g, S) {
-      band(g, S, ['#ff9933', '#fff', '#138808'], 'h'); g.strokeStyle = '#000080'; g.lineWidth = S * .02; g.beginPath(); g.arc(S / 2, S / 2, S * .11, 0, TAU); g.stroke();
-      g.lineWidth = S * .01; g.beginPath(); for (let i = 0; i < 12; i++) { const a = i * TAU / 12; g.moveTo(S / 2, S / 2); g.lineTo(S / 2 + Math.cos(a) * S * .11, S / 2 + Math.sin(a) * S * .11); } g.stroke();
-    } },
-    uk: { name: 'UK', d(g, S) {
-      g.fillStyle = '#012169'; g.fillRect(0, 0, S, S); g.lineCap = 'butt';
-      g.strokeStyle = '#fff'; g.lineWidth = S * .2; g.beginPath(); g.moveTo(0, 0); g.lineTo(S, S); g.moveTo(S, 0); g.lineTo(0, S); g.stroke();
-      g.strokeStyle = '#c8102e'; g.lineWidth = S * .07; g.beginPath(); g.moveTo(0, 0); g.lineTo(S, S); g.moveTo(S, 0); g.lineTo(0, S); g.stroke();
-      g.fillStyle = '#fff'; g.fillRect(S * .38, 0, S * .24, S); g.fillRect(0, S * .38, S, S * .24);
-      g.fillStyle = '#c8102e'; g.fillRect(S * .44, 0, S * .12, S); g.fillRect(0, S * .44, S, S * .12);
-    } },
-    us: { name: 'USA', d(g, S) {
-      for (let i = 0; i < 13; i++) { g.fillStyle = i % 2 ? '#fff' : '#b22234'; g.fillRect(0, i * S / 13, S, S / 13 + 1); }
-      g.fillStyle = '#3c3b6e'; g.fillRect(0, 0, S * .52, S * 7 / 13);
-      g.fillStyle = '#fff'; for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) { g.beginPath(); g.arc(S * (.06 + c * .095), S * (.06 + r * .12), S * .019, 0, TAU); g.fill(); }
-    } },
-    ca: { name: 'Canada', d(g, S) {
-      g.fillStyle = '#d52b1e'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(S * .25, 0, S * .5, S);
-      const P = [[0, -1], [.15, -.7], [.35, -.75], [.3, -.35], [.65, -.5], [.55, -.2], [.95, -.05], [.6, .25], [.7, .5], [.25, .4], [.05, .4], [.05, .95], [-.05, .95], [-.05, .4], [-.25, .4], [-.7, .5], [-.6, .25], [-.95, -.05], [-.55, -.2], [-.65, -.5], [-.3, -.35], [-.35, -.75], [-.15, -.7]];
-      g.fillStyle = '#d52b1e'; g.beginPath(); P.forEach((q, i) => { const x = S / 2 + q[0] * S * .2, y = S / 2 + q[1] * S * .2; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.fill();
-    } },
-    fr: { name: 'France', d(g, S) { band(g, S, ['#0055a4', '#fff', '#ef4135'], 'v'); } },
-    de: { name: 'Germany', d(g, S) { band(g, S, ['#000', '#dd0000', '#ffce00'], 'h'); } },
-    it: { name: 'Italy', d(g, S) { band(g, S, ['#009246', '#fff', '#ce2b37'], 'v'); } },
-    ie: { name: 'Ireland', d(g, S) { band(g, S, ['#169b62', '#fff', '#ff883e'], 'v'); } },
-    nl: { name: 'Netherlands', d(g, S) { band(g, S, ['#ae1c28', '#fff', '#21468b'], 'h'); } },
-    ru: { name: 'Russia', d(g, S) { band(g, S, ['#fff', '#0039a6', '#d52b1e'], 'h'); } },
-    ua: { name: 'Ukraine', d(g, S) { band(g, S, ['#0057b7', '#ffd700'], 'h'); } },
-    ng: { name: 'Nigeria', d(g, S) { band(g, S, ['#008751', '#fff', '#008751'], 'v'); } },
-    mx: { name: 'Mexico', d(g, S) { band(g, S, ['#006847', '#fff', '#ce1126'], 'v'); g.fillStyle = '#8a5a2b'; g.beginPath(); g.arc(S / 2, S / 2, S * .09, 0, TAU); g.fill(); } },
-    ar: { name: 'Argentina', d(g, S) { band(g, S, ['#74acdf', '#fff', '#74acdf'], 'h'); g.fillStyle = '#f6b40e'; g.beginPath(); g.arc(S / 2, S / 2, S * .07, 0, TAU); g.fill(); } },
-    es: { name: 'Spain', d(g, S) { g.fillStyle = '#aa151b'; g.fillRect(0, 0, S, S); g.fillStyle = '#f1bf00'; g.fillRect(0, S * .25, S, S * .5); } },
-    eg: { name: 'Egypt', d(g, S) { band(g, S, ['#ce1126', '#fff', '#000'], 'h'); g.fillStyle = '#c09300'; g.beginPath(); g.arc(S / 2, S / 2, S * .07, 0, TAU); g.fill(); } },
-    jo: { name: 'Jordan', d(g, S) { band(g, S, ['#000', '#fff', '#007a3d'], 'h'); g.fillStyle = '#ce1126'; g.beginPath(); g.moveTo(0, 0); g.lineTo(S * .5, S / 2); g.lineTo(0, S); g.closePath(); g.fill(); g.fillStyle = '#fff'; star(g, S * .16, S / 2, S * .07, S * .03, 7); } },
-    se: { name: 'Sweden', d(g, S) { g.fillStyle = '#006aa7'; g.fillRect(0, 0, S, S); g.fillStyle = '#fecc00'; g.fillRect(S * .3, 0, S * .14, S); g.fillRect(0, S * .43, S, S * .14); } },
-    ch: { name: 'Switzerland', d(g, S) { g.fillStyle = '#d52b1e'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(S * .43, S * .2, S * .14, S * .6); g.fillRect(S * .2, S * .43, S * .6, S * .14); } },
-    jp: { name: 'Japan', d(g, S) { g.fillStyle = '#fff'; g.fillRect(0, 0, S, S); g.fillStyle = '#bc002d'; g.beginPath(); g.arc(S / 2, S / 2, S * .26, 0, TAU); g.fill(); } },
-    br: { name: 'Brazil', d(g, S) { g.fillStyle = '#009c3b'; g.fillRect(0, 0, S, S); g.fillStyle = '#ffdf00'; g.beginPath(); g.moveTo(S / 2, S * .1); g.lineTo(S * .92, S / 2); g.lineTo(S / 2, S * .9); g.lineTo(S * .08, S / 2); g.closePath(); g.fill(); g.fillStyle = '#002776'; g.beginPath(); g.arc(S / 2, S / 2, S * .2, 0, TAU); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = S * .03; g.beginPath(); g.arc(S / 2, S * .62, S * .24, Math.PI * 1.2, Math.PI * 1.8); g.stroke(); } },
-    tr: { name: 'Turkey', d(g, S) { g.fillStyle = '#e30a17'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.beginPath(); g.arc(S * .4, S / 2, S * .22, 0, TAU); g.fill(); g.fillStyle = '#e30a17'; g.beginPath(); g.arc(S * .46, S / 2, S * .175, 0, TAU); g.fill(); g.fillStyle = '#fff'; star(g, S * .64, S / 2, S * .09, S * .036, 5); } },
-    pk: { name: 'Pakistan', d(g, S) { g.fillStyle = '#01411c'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(0, 0, S * .25, S); g.beginPath(); g.arc(S * .6, S / 2, S * .21, 0, TAU); g.fill(); g.fillStyle = '#01411c'; g.beginPath(); g.arc(S * .66, S * .45, S * .18, 0, TAU); g.fill(); g.fillStyle = '#fff'; star(g, S * .72, S * .4, S * .07, S * .028, 5); } },
-    cn: { name: 'China', d(g, S) { g.fillStyle = '#de2910'; g.fillRect(0, 0, S, S); g.fillStyle = '#ffde00'; star(g, S * .25, S * .27, S * .14, S * .056, 5); [[.5, .12], [.58, .24], [.58, .4], [.5, .52]].forEach(q => star(g, S * q[0], S * q[1], S * .04, S * .016, 5)); } }
-  };
-  function band(g, S, cols, dir) { const n = cols.length; cols.forEach((c, i) => { g.fillStyle = c; if (dir === 'h') g.fillRect(0, i * S / n, S, S / n + 1); else g.fillRect(i * S / n, 0, S / n + 1, S); }); }
-  function star(g, cx, cy, R, r, n) { g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, rr = i % 2 ? r : R; const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill(); }
-  const flagCache = {};
-  function flagCanvas(code) {
-    if (flagCache[code]) return flagCache[code];
-    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-    FLAGS[code].d(g, 128); flagCache[code] = c; return c;
-  }
-  const FLAG_BY_NAME = {}; Object.keys(FLAGS).forEach(k => { FLAG_BY_NAME[FLAGS[k].name.toLowerCase()] = k; });
-  const RIVAL_NAMES = Object.keys(FLAGS).filter(k => k !== 'ps' && k !== 'il').map(k => FLAGS[k].name);
-  function funFace(p) { const k = FLAG_BY_NAME[p.name.toLowerCase()]; if (k) p.fb = flagCanvas(k); else makeFallback(p, pick(FACES)); }
-  window.__flagSheet = () => Object.keys(FLAGS).map(k => flagCanvas(k).toDataURL());
-
-  /* ================= FUN MODE: solo game for screen-sharing (no live connection) ================= */
-  const HOST_NAME = 'chillax';
-  let host = null;
-  const F = { taps: 0, combo: 0, lastTap: -9, storm: 0, stormLen: 6.5, stormNext: 0, stormOwner: null, skyT: rf(30, 45), cd: {}, els: {}, beauty: 0 };
-
-  sfx.thunder = function () { if (!ok('thunder', 220)) return; noise(0, .9, .55, 140, .5); tone(55, 0, .8, 'sine', .5, 30); noise(.06, .5, .22, 900, .6); };
-  sfx.magic = function () { [784, 988, 1175, 1319, 1568, 1976, 2349].forEach((f, i) => { tone(f, i * .06, .35, 'triangle', .11, f * 1.02); tone(f * 2, i * .06, .2, 'sine', .04); }); hat(.42, .08); };
-  sfx.power = function () { [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, i * .04, .18, 'square', .06, f * 1.5)); kick(0, .25); };
-  sfx.dbl = function () { tone(220, 0, .5, 'sawtooth', .12, 880); tone(440, .1, .6, 'square', .08, 1760); kick(0, .4); kick(.25, .3); };
-  sfx.revenge = function () { sfx.siren(); noise(.2, .6, .3, 220, .5); tone(80, .1, .8, 'sine', .5, 30); };
-  sfx.shieldUp = function () { [523, 784, 1047, 1568].forEach((f, i) => tone(f, i * .05, .3, 'sine', .1, f * 1.2)); };
-
-  function makeHost() {
-    const p = joinPlayer(HOST_NAME, null, false, true);
-    if (!p) return;
-    p.fb = flagCanvas('ps'); p.isHost = true; p.god = true; p.filler = false; selfKey = p.key;
-    p.points = 40; p.r = p.tr = radFor(40) * sizeScale; p.blades = 2; p.shield = 3; p.pulse = 2; p.hue = 190;
-    host = p;
-    ring(p.x, p.y, '#35e0ff', 90, .8, 5); spark(p.x, p.y, '#35e0ff', 20, 220, .8);
-  }
-
-  function skyBolt(x, y) {
-    const sx = x + rf(-30, 30), pts = [{ x: sx, y: ARENA.y0 - 30 }], n = 8;
-    for (let i = 1; i < n; i++) { const k = i / n; pts.push({ x: sx + (x - sx) * k + rf(-22, 22), y: ARENA.y0 - 30 + (y - ARENA.y0 + 30) * k }); }
-    pts.push({ x, y });
-    bolts.push({ pts, t: 0, life: .34 });
-    spark(x, y, '#bfefff', 14, 260, .5); ring(x, y, '#bfefff', 60, .35, 3);
-  }
-  function strikeAt(v, dmg, owner) {
-    if (!v.alive) return;
-    skyBolt(v.x, v.y); v.stun = Math.max(v.stun, .6);
-    if (v.shield <= 0) hurt(v, dmg + v.points * .05, owner, 'zap');
-    sfx.zap(); shake(3); flash = Math.max(flash, .22);
-  }
-
-  function funStrike(count) {
-    const foes = aliveList().filter(q => q !== host).sort(() => Math.random() - .5).slice(0, count);
-    if (!foes.length) return;
-    banner('⚡ STRIKE!', '', '', 1.4);
-    foes.forEach((v, i) => sched.push({ t: i * .12, fn: () => strikeAt(v, 9, host) }));
-    ring(host.x, host.y, '#7fdcff', host.r + 60, .5, 4);
-  }
-  function funStorm() {
-    F.storm = F.stormLen = 6.5; F.stormNext = .2; F.stormOwner = host;
-    banner('🌪 STORM!', 'hold on…', 'big', 2.4); sfx.thunder();
-    ring(host.x, host.y, '#a58bff', host.r + 110, .8, 6);
-  }
-  function autoStorm() {
-    F.storm = F.stormLen = 5; F.stormNext = .3; F.stormOwner = null;
-    banner('⚡ LIGHTNING STORM!', 'everyone take cover', 'big', 2.6); sfx.thunder();
-  }
-  function funRevenge() {
-    let t = host.lastAtk && host.lastAtk.alive && host.lastAtk !== host ? host.lastAtk : null;
-    if (!t) t = aliveList().filter(q => q !== host).sort((a, b) => b.points - a.points)[0];
-    if (!t) return;
-    banner('🔥 REVENGE!', t.name, 'big', 2.6); sfx.revenge();
-    ring(host.x, host.y, '#ff5c2a', host.r + 80, .7, 6); spark(host.x, host.y, '#ffb347', 30, 300, .8); shake(5);
-    for (let i = 0; i < 5; i++) sched.push({ t: .25 + i * .2, fn: () => {
-      if (!t.alive) return;
-      bombs.push({ sx: host.x, sy: host.y, tx: clamp(t.x + rf(-26, 26), ARENA.x0 + 10, ARENA.x1 - 10), ty: clamp(t.y + rf(-26, 26), ARENA.y0 + 10, ARENA.y1 - 10), t: 0, dur: .55, owner: host });
-      sfx.whistle();
-    } });
-    for (let i = 0; i < 3; i++) sched.push({ t: 1.4 + i * .22, fn: () => {
-      if (!t.alive) return;
-      meteors.push({ x: clamp(t.x + rf(-24, 24), ARENA.x0 + 20, ARENA.x1 - 20), y: clamp(t.y + rf(-24, 24), ARENA.y0 + 20, ARENA.y1 - 20), t: 0, fall: .6, owner: host });
-      sfx.meteor();
-    } });
-    host.lastAtk = null;
-  }
-  function funDouble() {
-    host.dbl = 12; host.mega = Math.max(host.mega, 12); host.glow = 12; host.shield = Math.max(host.shield, 1);
-    banner('×2 POWER!', '12 seconds', 'big', 2.4); sfx.dbl(); shake(5);
-    ring(host.x, host.y, '#ffd23f', host.r + 90, .8, 6); ring(host.x, host.y, '#fff', host.r + 50, .5, 3); spark(host.x, host.y, '#ffd23f', 34, 300, .9);
-  }
-  function funShield() {
-    host.shield = Math.max(host.shield, 5);
-    ring(host.x, host.y, '#7dffb0', host.r + 60, .7, 5); spark(host.x, host.y, '#7dffb0', 20, 200, .7);
-    floater(host.x, host.y - host.r - 12, '🛡 SHIELD', '#7dffb0', 20); sfx.shieldUp();
-  }
-  function funBeauty() {
-    F.beauty++; addPoints(host, 8); host.glow = Math.max(host.glow, 3); host.pulse = 2;
-    sfx.magic();
-    for (let i = 0; i < 7; i++) ring(host.x, host.y, 'hsl(' + (i * 51) + ',100%,65%)', host.r + 40 + i * 16, .7 + i * .06, 3);
-    const emo = ['✨', '💖', '⭐', '🌈', '💫', '🎉', '🦋', '🌸'];
-    for (let i = 0; i < 8; i++) sched.push({ t: i * .07, fn: () => floater(host.x + rf(-46, 46), host.y - host.r - rf(0, 26), pick(emo), '#fff', 22 + ri(0, 8)) });
-    for (let i = 0; i < 5; i++) sched.push({ t: i * .15, fn: () => {
-      const x = rf(ARENA.x0 + 50, ARENA.x1 - 50), y = rf(ARENA.y0 + 40, ARENA.y0 + (ARENA.y1 - ARENA.y0) * .6), h = ri(0, 359);
-      spark(x, y, 'hsl(' + h + ',100%,68%)', 26, 270, 1.1); spark(x, y, 'hsl(' + ((h + 50) % 360) + ',100%,75%)', 16, 170, 1.0); spark(x, y, '#fff', 6, 300, .5);
-      ring(x, y, 'hsl(' + h + ',100%,70%)', 70, .5, 3); tone(rf(700, 1800), 0, .12, 'triangle', .05, rf(300, 900)); noise(0, .06, .06, 5000, 1);
-    } });
-  }
-
-  const ACTS = [
-    { k: 'dbl', emo: '×2', name: 'DOUBLE', cd: 20, hue: 48, fn: funDouble },
-    { k: 'strike', emo: '⚡', name: 'STRIKE', cd: 3, hue: 190, fn: () => funStrike(4) },
-    { k: 'storm', emo: '🌪', name: 'STORM', cd: 14, hue: 265, fn: funStorm },
-    { k: 'rev', emo: '🔥', name: 'REVENGE', cd: 7, hue: 12, fn: funRevenge },
-    { k: 'beauty', emo: '🎆', name: 'BEAUTY', cd: 1.8, hue: 320, fn: funBeauty },
-    { k: 'shield', emo: '🛡', name: 'SHIELD', cd: 14, hue: 150, fn: funShield }
-  ];
-  function trigger(a) {
-    if (!host || !host.alive) return;
-    if ((F.cd[a.k] || 0) > 0) return;
-    a.fn(); F.cd[a.k] = a.cd;
-  }
-
-  function tapPower(x, y) {
-    if (!host || !host.alive) return;
-    F.combo = (time - F.lastTap < .6) ? Math.min(F.combo + 1, 40) : 1; F.lastTap = time; F.taps++;
-    const gain = (2 + Math.floor(F.combo / 3)) * (host.dbl > 0 ? 2 : 1);
-    addPoints(host, gain);
-    host.vx += Math.cos(host.heading) * 14; host.vy += Math.sin(host.heading) * 14;
-    const col = 'hsl(' + ((F.taps * 23) % 360) + ',100%,68%)';
-    if (rings.length < 70) ring(x, y, col, 26 + Math.min(40, F.combo * 2), .32, 2.5);
-    spark(x, y, col, 4, 140, .35);
-    if (time - host.lastFloat > .15) { host.lastFloat = time; floater(host.x, host.y - host.r - 6, '+' + gain, '#fff', 13 + Math.min(10, F.combo * .4)); }
-    if (F.combo >= 5 && F.combo % 5 === 0 && time - (F.lastCombo || 0) > .7) { F.lastCombo = time; floater(x, y - 14, '🔥 x' + F.combo, '#ffd23f', 17); }
-    sfx.tap();
-    if (F.taps % 12 === 0) {
-      host.blades = Math.min(CFG.maxBlades, host.blades + 1); host.shield = Math.max(host.shield, .8);
-      floater(host.x, host.y - host.r - 24, '+1 ⚔ POWER!', '#35e0ff', 18);
-      ring(host.x, host.y, '#35e0ff', host.r + 40, .5, 4); spark(host.x, host.y, '#35e0ff', 14, 220, .6); sfx.power(); shake(1.5);
-    }
-    if (F.taps % 36 === 0) { host.bombs = Math.min(15, host.bombs + 2); floater(host.x, host.y - host.r - 40, '+2 💣', '#ffb347', 17); }
-    if (F.taps % 90 === 0) { host.lightning = Math.min(10, host.lightning + 1); floater(host.x, host.y - host.r - 56, '+1 ⚡', '#bfefff', 18); }
-  }
-
-  // Israel: a rival that keeps growing stronger and bigger all game (and can't be popped)
-  function makeIsrael() {
-    const b = spawnFiller(1, 45, 'Israel');
-    if (!b) return;
-    b.boss = true; b.god = true; F.rival = b; F.rivalT = 0;
-  }
-  function growRival(dt) {
-    const b = F.rival; if (!b || !b.alive) return;
-    b.points += dt * (3 + b.points * .012);
-    b.glow = Math.max(b.glow, 1.5); F.rivalT += dt;
-    if (F.rivalT > 22) { F.rivalT = 0; if (b.blades < 10) { b.blades++; floater(b.x, b.y - b.r - 12, '+1 ⚔', '#35e0ff', 18); ring(b.x, b.y, '#35e0ff', b.r + 40, .5, 4); sfx.gift(2); }
-      b.bombs = Math.min(8, b.bombs + 1); if (time > 90) b.lightning = Math.min(4, b.lightning + 1); b.shield = Math.max(b.shield, 1.2); }
-  }
-
-
-  // tap any rival bubble: it gets stronger
-  function boostBubble(p, x, y) {
-    if (!p || !p.alive) return;
-    p.tapsIn = (p.tapsIn || 0) + 1;
-    const gain = 4 + Math.floor(p.points * .03);
-    addPoints(p, gain); p.pulse = 1.5; p.shield = Math.max(p.shield, .4);
-    const col = 'hsl(' + p.hue + ',100%,70%)';
-    ring(p.x, p.y, col, p.r + 26, .35, 3); spark(p.x, p.y, col, 8, 190, .45);
-    if (time - p.lastFloat > .12) { p.lastFloat = time; floater(p.x, p.y - p.r - 6, '+' + gain + ' 💪', '#fff', 15); }
-    sfx.tap();
-    if (p.tapsIn % 5 === 0) {
-      p.blades = Math.min(CFG.maxBlades, p.blades + 1);
-      floater(p.x, p.y - p.r - 24, '+1 ⚔ STRONGER!', '#35e0ff', 17);
-      ring(p.x, p.y, '#35e0ff', p.r + 50, .5, 4); spark(p.x, p.y, '#ffd23f', 14, 240, .6); sfx.power(); shake(1.5);
-    }
-    if (p.tapsIn % 15 === 0) { p.bombs = Math.min(15, p.bombs + 1); p.glow = Math.max(p.glow, 4); floater(p.x, p.y - p.r - 40, '+1 💣', '#ffb347', 16); }
-    if (p.tapsIn % 40 === 0) { p.lightning = Math.min(10, p.lightning + 1); p.mega = Math.max(p.mega, 6); floater(p.x, p.y - p.r - 56, '+1 ⚡', '#bfefff', 18); }
-  }
-
-  window.TapArena.dump = () => aliveList().map(p => ({ n: p.name, x: p.x, y: p.y, r: p.r, pts: Math.round(p.points), bl: p.blades }));
-
-  function funTick(dt, alive) {
-    growRival(dt);
-    if (!host) return;
-    if (!host.alive) spawnPlayer(host, 30);
-    host.dbl = Math.max(0, (host.dbl || 0) - dt);
-    for (const a of ACTS) F.cd[a.k] = Math.max(0, (F.cd[a.k] || 0) - dt);
-    if (F.combo > 0 && time - F.lastTap > .8) F.combo = 0;
-    if (F.storm > 0) {
-      F.storm -= dt; F.stormNext -= dt;
-      if (F.stormNext <= 0) {
-        F.stormNext = rf(.28, .5);
-        const pool = alive.filter(q => q.alive && q !== F.stormOwner);
-        if (pool.length) { strikeAt(pick(pool), 5, F.stormOwner); if (Math.random() < .5) sfx.thunder(); }
-      }
-    }
-    F.skyT -= dt;
-    if (F.skyT <= 0 && F.storm <= 0) { F.skyT = rf(45, 70); autoStorm(); }
-  }
-
-  function drawStorm() {
-    if (F.storm <= 0) return;
-    const a = clamp(Math.min(F.storm, F.stormLen - F.storm, 1), 0, 1);
-    ctx.fillStyle = 'rgba(8,14,40,' + (.34 * a) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40);
-    ctx.strokeStyle = 'rgba(170,210,255,' + (.38 * a) + ')'; ctx.lineWidth = 1.5; ctx.beginPath();
-    const n = NOFX ? 40 : 90;
-    for (let i = 0; i < n; i++) {
-      const x = ((i * 137.5) % W + time * 40) % W, y = ((i * 71.3) % H + time * (700 + (i % 5) * 90)) % H;
-      ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 22);
-    }
-    ctx.stroke();
-  }
-  function drawHostMark() {
-    const p = host; if (!p || !p.alive) return;
-    const pulse = .5 + .5 * Math.sin(time * 5);
-    ctx.save();
-    ctx.lineWidth = 3; ctx.strokeStyle = 'hsla(' + ((time * 80) % 360) + ',100%,72%,' + (.55 + .3 * pulse) + ')';
-    if (!NOFX) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 14; }
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 5 + pulse * 2, 0, TAU); ctx.stroke();
-    ctx.shadowBlur = 0;
-    const ty = p.y - p.r - 16;
-    ctx.fillStyle = 'rgba(11,8,32,.75)'; ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(p.x - 17, ty - 9, 34, 18, 9); else ctx.rect(p.x - 17, ty - 9, 34, 18);
-    ctx.fill();
-    ctx.font = '700 11px Rubik, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#8ff0ff'; ctx.fillText('YOU', p.x, ty + .5);
-    ctx.restore();
-  }
-
-  // ---- FUN UI ----
-  {
-    const bar = document.createElement('div'); bar.id = 'fbar';
-    ACTS.forEach((a, i) => {
-      const b = document.createElement('button'); b.className = 'fb'; b.style.setProperty('--h', a.hue); b.title = a.name + '  (key ' + (i + 1) + ')';
-      const e = document.createElement('b'); e.textContent = a.emo;
-      const s = document.createElement('span'); s.textContent = a.name;
-      const c = document.createElement('i'); c.className = 'cdf';
-      b.append(e, s, c);
-      b.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); initAudio(); trigger(a); });
-      bar.appendChild(b); F.els[a.k] = b;
-    });
-    game.appendChild(bar);
-    const me = document.createElement('div'); me.id = 'fme';
-    me.innerHTML = '<div class="l1"><span id="fmeRank"></span><span id="fmeStat"></span></div><div class="bar"><i id="fmeBar"></i></div>';
-    game.appendChild(me);
-    const rules = document.querySelector('#overlay .rules'); rules.textContent = '';
-    ['👆 Tap any bubble = it gets STRONGER', '⚡ Strike · 🌪 Storm · 🔥 Revenge', '×2 Double · 🎆 Beauty · 🛡 Shield', '😎 chillax can never be popped!'].forEach(t => { const d = document.createElement('div'); d.textContent = t; rules.appendChild(d); });
-    $('start').textContent = '▶ PLAY';
-
-    game.addEventListener('pointerdown', e => {
-      if (e.target.closest('button')) return;
-      if ($('overlay').style.display !== 'none') return;
-      e.preventDefault(); initAudio();
-      const r = cv.getBoundingClientRect();
-      const tx = (e.clientX - r.left) / r.width * W, ty = (e.clientY - r.top) / r.height * H;
-      const hit = findBubbleAt(e.clientX, e.clientY);
-      if (hit && hit !== host) boostBubble(hit, tx, ty); else tapPower(tx, ty);
-    });
-    window.addEventListener('keydown', e => {
-      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      if ($('overlay').style.display !== 'none') return;
-      initAudio();
-      if (e.key >= '1' && e.key <= '6') { trigger(ACTS[+e.key - 1]); }
-      else if (e.key === ' ' && host) { e.preventDefault(); tapPower(host.x, host.y); }
-    });
-    setInterval(() => {
-      if (!host) return;
-      const al = aliveList().sort((a, b) => b.points - a.points);
-      $('fmeRank').textContent = '#' + (al.indexOf(host) + 1) + ' of ' + al.length + ' · ' + fmt(host.points) + ' pts';
-      $('fmeStat').textContent = '⚔' + host.blades + ' 💣' + host.bombs + ' ⚡' + host.lightning + (F.combo > 2 ? ' 🔥x' + F.combo : '') + (host.dbl > 0 ? ' ×2!' : '');
-      $('fmeBar').style.width = ((F.taps % 12) / 12 * 100) + '%';
-      for (const a of ACTS) F.els[a.k].style.setProperty('--cd', ((F.cd[a.k] || 0) > 0 ? Math.min(100, F.cd[a.k] / a.cd * 100) : 0) + '%');
-    }, 100);
-    makeHost();
-    setTimeout(makeIsrael, 60);
-  }
 
   game.addEventListener('contextmenu', e => e.preventDefault());
   /* legend (gift menu on the left) */
