@@ -279,13 +279,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   if (CHROMA && /^[0-9a-f]{3,6}$/i.test(CHROMA)) { document.documentElement.style.background = '#' + CHROMA; document.body.style.background = '#' + CHROMA; document.getElementById('game').style.background = '#' + CHROMA; }
 
   const GLOW = !STUDIO || Q.get('glow') === '1';
-  const STUDIO_PTS = 170;   // minimum start
+  const STUDIO_PTS = 60;   // minimum start
   // new viewers start with a bubble ~60% the size of the current biggest one
   function studioStartPts() {
     let big = 0; for (const q of aliveList()) { const rr = Math.max(q.r, q.tr || 0); if (rr > big) big = rr; }
     if (!big) return STUDIO_PTS;
     const target = 0.6 * big / Math.max(.01, sizeScale);
-    let lo = 8, hi = 200000;
+    let lo = 8, hi = Math.max(refPts, 600) * 1.5 + 200;
     for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (radFor(m) < target) lo = m; else hi = m; }
     return Math.max(STUDIO_PTS, Math.round(hi));
   }
@@ -296,13 +296,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const CFG = {
     maxPlayers: 80,
     startPoints: 10,
-    pts: { tap: 1, like: 1, comment: 3, share: 10 },
+    pts: { tap: 1, like: 1, comment: 2, share: 6 },
     // gifts: points per coin plus a % bonus of current points (bigger gift = bigger %)
-    ptsPerCoin: 6, bonusMax: 0.6, bonusCoins: 300,
+    ptsPerCoin: 6, bonusMax: 0.25, bonusCoins: 300,
     tierBlades: [0, 1, 2, 3, 4, 6, 8],
     maxBlades: 12,
     baseR: 13, rK: 2.0, capR: 62, whaleExtra: 16,   // radius stays modest; whales get a small extra
-    growRate: 12, shrinkRate: 30,                    // units/second, so size never jumps
+    growRate: 4, shrinkRate: 20,                    // units/second, so size never jumps
     crowdStart: 14, crowdStep: 0.009, crowdMin: 0.5, // bubbles shrink as more viewers join
     shield: 2.2, hitCd: 0.16,
     dmgBase: 1.5, dmgPerBlade: 1.2, dmgPct: 0.012, steal: 0.35, killBonus: 6,
@@ -548,7 +548,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   let uid = 0, time = 0, shakeAmp = 0, flash = 0, spot = null, sizeScale = 1, leader = null;
   let champion = null, championName = null;   // persistent crown holder: only changes when someone overtakes
 
+  let refPts = 600;   // the biggest score on the board: bubble size is measured against it
   function radFor(pts) {
+    if (STUDIO) {
+      const rel = clamp(Math.max(pts, 0) / Math.max(refPts, 600), 0, 1);
+      return CFG.baseR + (CFG.capR - CFG.baseR) * Math.sqrt(rel);
+    }
     let r = CFG.baseR + CFG.rK * Math.sqrt(Math.max(pts, 0));
     if (r > CFG.capR) {
       const capPts = Math.pow((CFG.capR - CFG.baseR) / CFG.rK, 2);
@@ -614,7 +619,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     makeFallback(p, bot ? pick(FACES) : null);
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
-    if (STUDIO && !bot) { p.points = studioStartPts(); p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
+    if (STUDIO && !bot) { p.points = studioStartPts(); p.blades = 1; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
     roster.set(key, p); players.push(p);
     if (!silent) { feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
@@ -664,7 +669,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     setTimeout(() => {
       if (!p.alive) return;
       giftPop(p, ''); $('gpgift').textContent = "🚀 LET'S GO!";
-      banner("🚀 LET'S GO " + p.name.toUpperCase() + "!", 'shielded for 30 seconds', 'big', 3.2);
+      banner("🚀 LET'S GO " + p.name.toUpperCase() + "!", '👆 tap the screen to get more power!', 'big', 3.2);
       ring(p.x, p.y, '#35e0ff', p.r + 70, .8, 5); spark(p.x, p.y, '#35e0ff', 26, 260, .9); sfx.gift(2);
     }, 450);
   }
@@ -718,11 +723,19 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.num = 1; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
     $('roundbar').textContent = '⚔️ Round 1 · ' + fmtT(round.t) + ' left';
   }
-  setTimeout(() => { motivate(); setInterval(motivate, 60000); }, 30000);
+  // gentle reminder about once a minute: mostly "tap the screen", and every third time "send a Rose"
+  let remindN = 0;
+  function remind() {
+    const al = aliveList().filter(q => !q.filler); if (!al.length) return;
+    const n = pick(al).name;
+    const tapMsgs = ['👆 Tap the screen to power up your bubble!', '👆 ' + n + ', keep tapping the screen for more power!', '👆 Tap, comment and like to grow your bubble!', '💬 Comment RUN to escape or ATTACK to hunt!'];
+    const msg = (remindN % 3 === 2) ? '🌹 Send a Rose to get an extra blade and fight harder!' : tapMsgs[remindN % tapMsgs.length];
+    remindN++; showMotiv(msg);
+  }
+  setTimeout(() => { remind(); setInterval(remind, 60000); }, 25000);
   const HOW = ['💬 Comment · 👍 Like · 🔗 Share = points and growth', '🌹 Send a Rose = a blade ⚔️ to fight with!'];
   let howI = 0; const howEl = $('howto');
-  const howTick = () => { howEl.textContent = HOW[howI++ % HOW.length]; };
-  howTick(); setInterval(howTick, 6000);
+  howEl.remove();   // instruction text removed
 
   /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
   const ROUND_SECS = STUDIO ? CFG.roundSecsStudio : CFG.roundSecs;
@@ -821,7 +834,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function startRound() {
     round.num++; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
     for (const p of players) if (p.alive) { p.points = STUDIO ? studioStartPts() : 8; p.pulse = 1; }
-    showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!' + (championName ? ' 👑 ' + championName + ' defends the crown!' : ''));
+    showMotiv('⚔️ Round ' + round.num + ' has begun!' + (championName ? ' 👑 ' + championName + ' defends the crown!' : ''));
     feed('⚔️ Round ' + round.num + ' begins!' + (championName ? ' 👑 ' + championName + ' defends the crown.' : ''), 'join');
   }
 
@@ -842,7 +855,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (!p.alive) {
         if (time - p.diedAt < 2.5) return;
         p.blades = 0; p.bombs = 0; p.lightning = 0; p.gifted = 0;
-        spawnPlayer(p, STUDIO ? studioStartPts() : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
+        spawnPlayer(p, STUDIO ? studioStartPts() : 8); if (STUDIO) { p.blades = 1; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
@@ -850,7 +863,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const count = clamp(parseInt(e.count, 10) || 1, 1, 50);
     if (type === 'tap' || type === 'like') {
       if (STUDIO) {
-        onGift(p, clamp(2 * count, 1, 90), 'Tap');
+        addPoints(p, Math.min(count, 6) * 0.6);
         grabOrb(p, p.x, p.y);
       } else {
         addPoints(p, CFG.pts.tap * count);
@@ -863,6 +876,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
       floater(x, y - 10, '+' + CFG.pts.comment, '#9fe8ff', 15); sfx.comment();
       if (STUDIO) grabOrb(p, p.x, p.y);
+      if (STUDIO && e.text && time > (p.cmdCd || 0)) {
+        const tx = String(e.text).toLowerCase();
+        const cmd = /\b(run|flee|escape)\b/.test(tx) ? 'run' : /\b(attack|hunt)\b/.test(tx) ? 'attack' : null;
+        if (cmd) {
+          p.cmd = cmd; p.cmdT = 2.4; p.cmdCd = time + 3.5;
+          floater(p.x, p.y - p.r - 20, cmd === 'run' ? '🏃 RUN!' : '⚔️ ATTACK!', cmd === 'run' ? '#7fe8ff' : '#ff8a5c', 20);
+          ring(p.x, p.y, cmd === 'run' ? '#7fe8ff' : '#ff8a5c', p.r + 26, .4, 3);
+        }
+      }
     } else if (type === 'share') {
       addPoints(p, CFG.pts.share);
       floater(x, y - 10, '+' + CFG.pts.share + ' 🔗', '#ffd23f', 18);
@@ -879,7 +901,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const c = 'hsl(' + p.hue + ',100%,70%)';
     // points: per-coin points plus a percentage of current points that grows with the gift
     const bonusPct = Math.min(CFG.bonusMax, coins / CFG.bonusCoins);
-    addPoints(p, coins * CFG.ptsPerCoin + p.points * bonusPct);
+    addPoints(p, coins * CFG.ptsPerCoin + Math.min(p.points * bonusPct, 250 + coins * 2));
     p.gifted += coins;
     const addB = CFG.tierBlades[tier];
     p.blades = Math.min(CFG.maxBlades, p.blades + addB);
@@ -987,6 +1009,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     { k: 'slow', label: '🐌 SLOWED!', good: false, fn: p => { p.stun = Math.max(p.stun, 1.6); } }
   ];
   function spawnOrb() {
+    return;   // orbs disabled
     if (orbs.length >= 2) return;
     const fx = ORB_FX[ri(0, ORB_FX.length - 1)];
     orbs.push({
@@ -1009,6 +1032,58 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
     }
     return false;
+  }
+  /* ---------- Food: everyone starts with 1 blade and must eat to grow more ---------- */
+  const foods = []; let foodT = 0;
+  const FOOD_MAX = 18, FOOD_PER_BLADE = 10, FOOD_BLADE_CAP = 5;   // food teaches the first blades; after that it gives points + power
+  const FRUITS = [{ e: '🍎', c: '#ff5c5c' }, { e: '🍌', c: '#ffe066' }, { e: '🍇', c: '#b07cff' }, { e: '🍓', c: '#ff6f9f' }, { e: '🍉', c: '#ff6b81' }, { e: '🍊', c: '#ffa94d' }, { e: '🥕', c: '#ff922b' }, { e: '🌽', c: '#ffe066' }, { e: '🍒', c: '#ff4d6d' }, { e: '🥦', c: '#69db7c' }, { e: '🍍', c: '#ffd43b' }, { e: '🍐', c: '#a9e34b' }, { e: '🥑', c: '#8ce99a' }, { e: '🍆', c: '#9775fa' }];
+  const GOLD_FRUIT = { e: '🍑', c: '#ffd23f' };
+  function spawnFood() {
+    if (foods.length >= FOOD_MAX) return;
+    const gold = Math.random() < .05, fr = gold ? GOLD_FRUIT : pick(FRUITS);
+    foods.push({ x: rf(ARENA.x0 + 24, ARENA.x1 - 24), y: rf(ARENA.y0 + 50, ARENA.y1 - 50), r: gold ? 14 : 11, gold, e: fr.e, col: fr.c, t: rf(0, 6) });
+  }
+  function eatFood(p, f) {
+    const maxed = p.blades >= FOOD_BLADE_CAP;
+    if (f.gold) {
+      if (!maxed) { p.blades = Math.min(CFG.maxBlades, p.blades + 1); floater(p.x, p.y - p.r - 6, '+1 ⚔', '#ffd23f', 20); }
+      else { p.shield = Math.max(p.shield, 3); p.glow = Math.max(p.glow, 4); floater(p.x, p.y - p.r - 6, '⭐ POWER', '#ffd23f', 18); }
+      addPoints(p, maxed ? 6 : 3);
+      ring(p.x, p.y, '#ffd23f', p.r + 34, .5, 3); spark(p.x, p.y, '#ffd23f', 12, 190, .7); sfx.gift(1);
+    } else if (maxed) {
+      addPoints(p, 1.5); p.shield = Math.max(p.shield, 1.2);
+      floater(p.x, p.y - p.r - 4, '+1.5', f.col, 14); spark(p.x, p.y, f.col, 6, 120, .4);
+    } else {
+      addPoints(p, 0.8); p.food = (p.food || 0) + 1;
+      if (p.food >= FOOD_PER_BLADE) {
+        p.food = 0; p.blades = Math.min(CFG.maxBlades, p.blades + 1);
+        floater(p.x, p.y - p.r - 6, '+1 ⚔', '#35e0ff', 18); ring(p.x, p.y, '#35e0ff', p.r + 28, .45, 3); spark(p.x, p.y, '#9fe8ff', 9, 170, .6); sfx.gift(1);
+      } else spark(p.x, p.y, f.col, 5, 100, .3);
+    }
+  }
+  function updateFood(dt) {
+    foodT -= dt; if (foodT <= 0) { spawnFood(); foodT = .7; }
+    for (const f of foods) f.t += dt;
+    for (let i = foods.length - 1; i >= 0; i--) {
+      const f = foods[i];
+      for (const p of players) {
+        if (!p.alive) continue;
+        if (Math.hypot(p.x - f.x, p.y - f.y) < p.r + f.r) { foods.splice(i, 1); eatFood(p, f); break; }
+      }
+    }
+  }
+  function drawFoods() {
+    for (const f of foods) {
+      const pu = 1 + Math.sin(f.t * 5) * .08, bob = Math.sin(f.t * 2.4) * 3;
+      ctx.save(); ctx.translate(f.x, f.y + bob); ctx.rotate(Math.sin(f.t * 2) * .18); ctx.scale(pu, pu);
+      ctx.fillStyle = f.gold ? 'rgba(255,210,63,.35)' : 'rgba(255,255,255,.12)';
+      if (GLOW) { ctx.shadowColor = f.col; ctx.shadowBlur = f.gold ? 22 : 12; }
+      ctx.beginPath(); ctx.arc(0, 0, f.r * 1.25, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.font = Math.round(f.r * 2) + 'px system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+      ctx.fillText(f.e, 0, 1);
+      ctx.restore();
+    }
   }
   function updateOrbs(dt) {
     orbSpawnT -= dt;
@@ -1131,20 +1206,41 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
       if (best) { const vx = p.x - best.x, vy = p.y - best.y, l = Math.hypot(vx, vy) || 1; dx = dx * .6 + vx / l * .7; dy = dy * .6 + vy / l * .7; }
     }
+    if (STUDIO && foods.length) {
+      let bf = null, fd = 1e9;
+      for (const f of foods) { const d = Math.hypot(f.x - p.x, f.y - p.y); if (d < fd) { fd = d; bf = f; } }
+      if (bf && fd < 330) {
+        const w = p.blades < FOOD_BLADE_CAP ? 1.3 : .35, fx = bf.x - p.x, fy = bf.y - p.y, fl = Math.hypot(fx, fy) || 1;
+        dx = dx * .5 + fx / fl * w; dy = dy * .5 + fy / fl * w;
+      }
+    }
+    let boost = 1;
+    if (p.cmdT > 0) {
+      p.cmdT -= dt;
+      let tg = null, td = 1e9;
+      for (const q of alive) { if (q === p) continue; const d = Math.hypot(q.x - p.x, q.y - p.y) - q.r; if (d < td) { td = d; tg = q; } }
+      if (tg) {
+        const vx = tg.x - p.x, vy = tg.y - p.y, vl = Math.hypot(vx, vy) || 1, sg = p.cmd === 'run' ? -1 : 1;
+        dx = vx / vl * sg * 1.8 + dx * .1; dy = vy / vl * sg * 1.8 + dy * .1;
+        if (p.cmd === 'run') { dx += (W / 2 - p.x) / W * .9; dy += ((ARENA.y0 + ARENA.y1) / 2 - p.y) / H * .9; }
+        boost = 1.55;
+      }
+    }
     const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
     p.heading = Math.atan2(dy, dx);
-    const sp = p.blades > 0 ? Math.min(150, 78 + p.blades * 9) : 52;
-    const k = Math.min(1, dt * 1.4);
+    const sp = (p.blades > 0 ? Math.min(150, 78 + p.blades * 9) : 52) * boost;
+    const k = Math.min(1, dt * (boost > 1 ? 3 : 1.4));
     p.vx += (dx * sp - p.vx) * k; p.vy += (dy * sp - p.vy) * k;
   }
 
   function update(dt) {
     time += dt;
     roundTick(dt);
-    if (STUDIO) updateOrbs(dt);
+    if (STUDIO) updateFood(dt);   // random power-up orbs removed
     const alive = aliveList();
     sizeScale = clamp(1 - (alive.length - CFG.crowdStart) * CFG.crowdStep, CFG.crowdMin, 1);
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
+    refPts = Math.max(600, lp);
     checkCrown(leader);
 
     for (const p of alive) {
@@ -1387,7 +1483,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (ctx.roundRect) ctx.roundRect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0, 28); else ctx.rect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0);
     ctx.stroke(); ctx.restore();
 
-    if (STUDIO) drawOrbs();
+    if (STUDIO) drawFoods();
 
     // meteor telegraphs and streaks
     for (const m of meteors) {
@@ -1621,10 +1717,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const FILL_ARG = Q.get('fillers');
   const FILL_ON = FILL_ARG !== '0';
   const FILL_N = clamp(parseInt(FILL_ARG, 10) || (STUDIO ? 4 : 6), 1, 20);
-  const FILL_REAL_MAX = STUDIO ? 99999 : 15;
+  const FILL_REAL_MAX = STUDIO ? 10 : 15;
   const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
   const FILL_SAYS = ['⚔️', '🔥', 'GG', 'let\'s go!', 'pop!', '😈', 'boom', 'watch out', '💥', 'come at me'];
-  const FILL_BLADES = [0, 1, 1, 2, 2, 3, 4];
+  const FILL_BLADES = [1];
   let fillRetired = false, fillSeq = 0, fillReady = false;
   const fillers = () => players.filter(q => q.filler && q.alive);
   const realCount = () => players.filter(q => q.alive && !q.filler).length;
@@ -1654,11 +1750,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   // a growth moment that looks and sounds like a gift, but shows no fake gift banner or message
   function fillerBoost(p, lvl) {
     const c = 'hsl(' + p.hue + ',100%,70%)', before = p.blades;
-    addPoints(p, [0, 18, 40, 90][lvl]);
-    p.gifted += [0, 1, 20, 100][lvl];
-    p.blades = Math.min(8, p.blades + (lvl >= 3 ? 2 : 1));
-    if (lvl >= 2) { p.bombs = Math.min(4, p.bombs + 1); p.glow = 5; }
-    if (lvl >= 3) { p.lightning = Math.min(3, p.lightning + 1); p.mega = 10; }
+    addPoints(p, [0, 4, 9, 18][lvl]);
+    p.gifted += [0, 0, 2, 6][lvl];
+    if (lvl >= 2) p.glow = 4;
     p.shield = Math.max(p.shield, 1 + lvl * .4);
     p.pulse = 2.5;
     ring(p.x, p.y, c, p.r + 40 + lvl * 22, .75, 3 + lvl);
@@ -1671,7 +1765,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const fl = fillers(); if (!fl.length) return;
     const p = pick(fl), r = Math.random(), x = p.x, y = p.y - p.r;
     if (r < .60) {
-      const n = ri(1, 4); addPoints(p, n);
+      const n = ri(1, 2); addPoints(p, n * 0.6);
       p.vx += Math.cos(p.heading) * 20; p.vy += Math.sin(p.heading) * 20;
       if (Math.random() < .35) floater(x, y, '+' + n, '#fff', 13);
       sfx.tap();
@@ -1686,12 +1780,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     else fillerBoost(p, 3);
   }
   if (FILL_ON) {
-    const start = [1, 1, 2, 2, 3, 4, 0, 0, 1, 2, 0, 3, 1, 2, 0, 1, 2, 3, 0, 1];
+    const start = [1];
     const PERM = STUDIO ? [{ name: 'chillax', flag: 'ps' }, { name: 'Israel', flag: 'il' }] : [];
-    PERM.forEach((who, i) => setTimeout(() => { const b = spawnFiller(2, 30, who.name, who.flag); if (b) { b.permanent = true; if (who.name === 'Israel') b.permanentDbl = true; } }, 250 + i * 160));
+    PERM.forEach((who, i) => setTimeout(() => { const b = spawnFiller(1, 30, who.name, who.flag); if (b) { b.permanent = true; if (who.name === 'Israel') b.permanentDbl = true; } }, 250 + i * 160));
     for (let i = PERM.length; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
     setTimeout(() => { fillReady = true; }, 250 + FILL_N * 160 + 150);
-    (function fillerLoop() { if (!document.hidden) fillerAct(); setTimeout(fillerLoop, rf(170, 330)); })();
+    (function fillerLoop() { if (!document.hidden) fillerAct(); setTimeout(fillerLoop, rf(650, 1100)); })();
     setInterval(() => {
       const real = realCount();
       if (real > FILL_REAL_MAX) fillRetired = true; else if (real <= FILL_REAL_MAX - 3) fillRetired = false;
@@ -1703,7 +1797,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         if (q.filler && !q.alive && time - q.diedAt > 4) {
           const wasPerm = q.permanent, pname = q.name, pflag = q.flagCodeRef;
           roster.delete(q.key); players.splice(i, 1);
-          if (wasPerm) { const b = spawnFiller(2, 30, pname, pname === 'chillax' ? 'ps' : pname === 'Israel' ? 'il' : null); if (b) { b.permanent = true; if (pname === 'Israel') b.permanentDbl = true; feed('👋 ' + pname + ' joined the fight', 'join'); sfx.join(); } }
+          if (wasPerm) { const b = spawnFiller(1, 30, pname, pname === 'chillax' ? 'ps' : pname === 'Israel' ? 'il' : null); if (b) { b.permanent = true; if (pname === 'Israel') b.permanentDbl = true; feed('👋 ' + pname + ' joined the fight', 'join'); sfx.join(); } }
         }
       }
     }, 400);
@@ -1840,7 +1934,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   game.addEventListener('contextmenu', e => e.preventDefault());
   /* legend (gift menu on the left) */
   const legendEl = $('legend');
-  if (!LEGEND) legendEl.remove();
+  if (true) legendEl.remove();   // gift/comment instruction panel removed
   else {
     const h = document.createElement('div'); h.className = 'lh'; h.textContent = '💬 Comment · 👍 Like · 🔗 Share'; legendEl.appendChild(h);
     const simple = document.createElement('div'); simple.className = 'g';
