@@ -241,16 +241,16 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   @keyframes twinkle { 0%,100% { transform: scale(.2); opacity: .2; } 50% { transform: scale(1.25); opacity: 1; } }
   /* ---- Real footage: lion pride (green screen keyed to transparent) ---- */
   .pride-wrap {
-    position: absolute; left: 50%; bottom: 0; width: min(100vw, 900px);
-    transform: translate(-50%, 105%); transition: transform .9s cubic-bezier(.2,.9,.3,1);
+    position: absolute; left: 50%; bottom: 15%; width: min(150vw, 1200px);
+    transform: translate(-50%, calc(100% + 40vh)); transition: transform .9s cubic-bezier(.2,.9,.3,1);
     filter: drop-shadow(0 0 22px rgba(255,190,60,.35));
   }
   .pride-wrap.in { transform: translate(-50%, 0); }
-  .pride-wrap.out { transform: translate(-50%, 105%); transition: transform .7s ease-in; }
-  .pride-wrap canvas { width: 100%; height: auto; display: block; }
+  .pride-wrap.out { transform: translate(-50%, calc(100% + 40vh)); transition: transform .7s ease-in; }
+  .pride-wrap video { width: 100%; height: auto; display: block; }
 
   /* ===== Gift FX layer (rose / lion roar / queen / lion video) ===== */
-  #fxLayer { position: absolute; inset: 0; z-index: 30; pointer-events: none; overflow: hidden; }
+  #fxLayer { position: absolute; inset: 0; z-index: 95; pointer-events: none; overflow: hidden; }
   #fxLayer .gift-icon { position: absolute; width: calc(var(--u)*22); height: calc(var(--u)*22); left: 50%; top: 60%; opacity: 0; transform: translate(-50%,-50%) scale(.2); filter: drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
   #fxLayer .gift-icon.fly { animation: giftFly var(--dur, 2.4s) cubic-bezier(.17,.84,.44,1) forwards; }
   .fxspark { position: absolute; width: 9px; height: 9px; margin: -4px 0 0 -4px; border-radius: 50%; background: radial-gradient(circle,#fff,#ffd23f); box-shadow: 0 0 10px #ffb300; animation: fxSpark .9s ease-out forwards; }
@@ -2393,52 +2393,46 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     prideUrl = URL.createObjectURL(new Blob([u8], { type: 'video/mp4' }));
     return prideUrl;
   }
+  function ensureChromaFilter() {
+    if (document.getElementById('fxChromaSvg')) return;
+    const d = document.createElement('div'); d.id = 'fxChromaSvg'; d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    d.innerHTML = '<svg width="0" height="0" xmlns="http://www.w3.org/2000/svg"><filter id="fxChroma" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feColorMatrix type="matrix" values="1 0 0 0 0  0.1 0.8 0.1 0 0  0 0 1 0 0  3 -5 3 0 1.5"/></filter></svg>';
+    document.body.appendChild(d);
+  }
   function playPrideSequence() {
-    const url = getPrideUrl(); if (!url) return;
+    const url = getPrideUrl(); if (!url) { showBurst('Lion video data missing'); return; }
+    ensureChromaFilter();
     const W = LW(), H = LH();
     const wrap = document.createElement('div'); wrap.className = 'pride-wrap';
-    const cv = document.createElement('canvas'); wrap.appendChild(cv); layer.appendChild(wrap);
-    const cx = cv.getContext('2d', { willReadFrequently: true });
     const video = document.createElement('video');
     video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
-    video.setAttribute('muted', ''); video.setAttribute('playsinline', ''); video.preload = 'auto';
-    video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
-    wrap.appendChild(video);
-    let running = true, shown = false;
-    function show() {
-      if (shown) return; shown = true;
-      cv.width = video.videoWidth || 960; cv.height = video.videoHeight || 442;
-      void wrap.offsetWidth; wrap.classList.add('in');
-    }
-    video.addEventListener('loadedmetadata', show);
-    video.addEventListener('canplay', () => { show(); video.play().catch(() => {}); });
-    video.src = url; video.load(); video.play().catch(() => {});
-    function draw() {
-      if (!running) return;
-      if (video.readyState >= 2 && cv.width) {
-        cx.drawImage(video, 0, 0, cv.width, cv.height);
-        const img = cx.getImageData(0, 0, cv.width, cv.height), d = img.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const r = d[i], g = d[i + 1], b = d[i + 2], diff = g - (r > b ? r : b);
-          if (diff > 60) d[i + 3] = 0;
-          else if (diff > 14) { d[i + 3] = 255 * (1 - (diff - 14) / 46); d[i + 1] = r > b ? r : b; }
-          else if (diff > 0) d[i + 1] = g - diff * 0.6;
-        }
-        cx.putImageData(img, 0, 0);
-      }
-      requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(draw);
+    video.setAttribute('muted', ''); video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', ''); video.preload = 'auto';
+    video.style.cssText = 'display:block;width:100%;height:auto;aspect-ratio:960/442;filter:url(#fxChroma);background:transparent';
+    wrap.appendChild(video); layer.appendChild(wrap);
+    /* little status line so we can see what the phone is doing */
+    const st = document.createElement('div');
+    st.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:1%;z-index:200;font:600 12px system-ui;color:#fff;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:8px;white-space:nowrap';
+    layer.appendChild(st);
+    let running = true;
+    const upd = () => { if (!running) return; st.textContent = 'lion video  ready=' + video.readyState + '  t=' + video.currentTime.toFixed(1) + '  ' + video.videoWidth + 'x' + video.videoHeight + (video.error ? '  ERROR ' + video.error.code : ''); };
+    const iv = setInterval(upd, 250); upd();
+    video.addEventListener('error', () => { try { showBurst('Lion video error ' + (video.error ? video.error.code : '?')); } catch (e) {} });
+    video.src = url; video.load();
+    const go = () => { const p = video.play(); if (p && p.catch) p.catch(() => {}); };
+    go(); video.addEventListener('canplay', go);
+    void wrap.offsetWidth;
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('in')));
     [392, 523, 659, 784].forEach((f, i) => tone(f, i * 0.14, 0.5, 'triangle', 0.2));
     setTimeout(() => { showBurst('🦁 LION PRIDE! 🦁'); screenFlash(); sparks(W / 2, H * 0.78, 30, 220); }, 700);
+    setTimeout(() => { try { st.remove(); } catch (e) {} }, 5000);
     setTimeout(() => wrap.classList.add('out'), 7600);
-    setTimeout(() => { running = false; try { video.pause(); } catch (e) {} video.removeAttribute('src'); video.load(); wrap.remove(); }, 8400);
+    setTimeout(() => { running = false; clearInterval(iv); try { video.pause(); } catch (e) {} video.removeAttribute('src'); video.load(); wrap.remove(); try { st.remove(); } catch (e) {} }, 8400);
   }
 
   /* ---- HOST-ONLY chat words ----
      Only comments from the host account trigger these. Everyone else typing the same words does nothing.
-     Host name: default "chillax". Change it with  ?host=yourTikTokName  (several: ?host=name1,name2)  */
-  const HOSTS = (FQ.get('host') || 'chillax').split(',').map(s => s.trim().replace(/^@/, '').toLowerCase()).filter(Boolean);
+     Host name: default "chillax1.0". Change it with  ?host=yourTikTokName  (several: ?host=name1,name2)  */
+  const HOSTS = (FQ.get('host') || 'chillax1.0').split(',').map(s => s.trim().replace(/^@/, '').toLowerCase()).filter(Boolean);
   const WORDS = [
     [/\b(pride|lions)\b/i, 'pride'],
     [/\b(queen|crown)\b/i, 'queen'],
