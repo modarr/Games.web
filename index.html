@@ -1628,20 +1628,26 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ];
     // small gifts also trigger these same actions, for whichever viewer sent the gift
     const giftCds = {};
-    const GIFT_ACT = { 1: 'strike', 20: 'storm', 30: 'fw' };
+    const GIFT_ACT = { 1: 'strike', 5: 'sh', 20: 'storm', 30: 'fw', 50: 'dbl', 100: 'rev' };
+    const GIFT_LABEL = { strike: ['🌹', 'Rose', 1], sh: ['🫰', 'Finger Heart', 5], storm: ['🧴', 'Perfume', 20], fw: ['🍩', 'Doughnut', 30], dbl: ['🎁', '50-coin gift', 50], rev: ['🫶', 'Hand Hearts', 100] };
     window.__studioGiftAction = (p, coins) => {
       const key = GIFT_ACT[coins]; if (!key) return;
       const a = ACTS.find(x => x.k === key); if (!a) return;
       const now = performance.now() / 1000, ck = key + ':' + p.key;
       if ((giftCds[ck] || 0) > now) return;
       giftCds[ck] = now + a.cd; a.fn(p);
+      const L = GIFT_LABEL[key];
+      try { banner(L[0] + ' ' + String(p.name).toUpperCase(), L[1] + ' → ' + a.n + '!', 'big', 2.6); } catch (e) {}
+      try { feed(L[0] + ' ' + p.name + ' sent ' + L[1] + ' → ' + a.n + '!', 'gift'); } catch (e) {}
+      try { giftPop(p, L[1]); } catch (e) {}
     };
     const bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;left:0;right:0;bottom:6px;z-index:90;display:flex;justify-content:center;gap:6px;pointer-events:auto';
     ACTS.forEach((a, i) => {
       const b = document.createElement('button');
       b.style.cssText = 'font:700 13px system-ui;color:#fff;background:rgba(20,10,50,.78);border:2px solid #35e0ff;border-radius:12px;padding:7px 8px;min-width:48px;cursor:pointer';
-      b.innerHTML = a.t + '<div style="font-size:8px;opacity:.85">' + a.n + '</div>';
+      const gl = GIFT_LABEL[a.k];
+      b.innerHTML = a.t + '<div style="font-size:8px;opacity:.85">' + a.n + '</div><div style="font-size:9px;margin-top:2px;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '🪙</div>';
       const fire = () => {
         const h = hostP(), now = performance.now() / 1000;
         if (!h || !h.alive || (cds[a.k] || 0) > now) return;
