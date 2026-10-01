@@ -279,7 +279,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   if (CHROMA && /^[0-9a-f]{3,6}$/i.test(CHROMA)) { document.documentElement.style.background = '#' + CHROMA; document.body.style.background = '#' + CHROMA; document.getElementById('game').style.background = '#' + CHROMA; }
 
   const GLOW = !STUDIO || Q.get('glow') === '1';
-  const STUDIO_PTS = 170;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
+  const STUDIO_PTS = 170;   // minimum start
+  // new viewers start with a bubble ~60% the size of the current biggest one
+  function studioStartPts() {
+    let big = 0; for (const q of aliveList()) { const rr = Math.max(q.r, q.tr || 0); if (rr > big) big = rr; }
+    if (!big) return STUDIO_PTS;
+    const target = 0.6 * big / Math.max(.01, sizeScale);
+    let lo = 8, hi = 200000;
+    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (radFor(m) < target) lo = m; else hi = m; }
+    return Math.max(STUDIO_PTS, Math.round(hi));
+  }
+  const STUDIO_PTS_UNUSED = 0;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
   /* ---------- Config ---------- */
   const W = 540, H = 960, TAU = Math.PI * 2;
   const ARENA = { x0: 14, y0: 100, x1: W - 14, y1: H - 24 };
@@ -602,7 +612,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     makeFallback(p, bot ? pick(FACES) : null);
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
-    if (STUDIO && !bot) { p.points = STUDIO_PTS; p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
+    if (STUDIO && !bot) { p.points = studioStartPts(); p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
     roster.set(key, p); players.push(p);
     if (!silent) { feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
@@ -805,7 +815,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (!p.alive) {
         if (time - p.diedAt < 2.5) return;
         p.blades = 0; p.bombs = 0; p.lightning = 0; p.gifted = 0;
-        spawnPlayer(p, STUDIO ? STUDIO_PTS : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
+        spawnPlayer(p, STUDIO ? studioStartPts() : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
@@ -1642,12 +1652,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       try { giftPop(p, L[1]); } catch (e) {}
     };
     const bar = document.createElement('div');
-    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:6px;z-index:90;display:flex;justify-content:center;gap:6px;pointer-events:auto';
+    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:90;display:flex;gap:1vw;padding:1vw;box-sizing:border-box;background:linear-gradient(transparent,rgba(5,0,25,.85) 35%);pointer-events:auto';
     ACTS.forEach((a, i) => {
       const b = document.createElement('button');
-      b.style.cssText = 'font:700 13px system-ui;color:#fff;background:rgba(20,10,50,.78);border:2px solid #35e0ff;border-radius:12px;padding:7px 8px;min-width:48px;cursor:pointer';
+      b.style.cssText = 'flex:1 1 0;min-width:0;font:700 min(4.6vw,2.6vh) system-ui;color:#fff;background:rgba(20,10,50,.85);border:.5vw solid #35e0ff;border-radius:2.2vw;padding:1.8vw 0;cursor:pointer;line-height:1.15';
       const gl = GIFT_LABEL[a.k];
-      b.innerHTML = a.t + '<div style="font-size:8px;opacity:.85">' + a.n + '</div><div style="font-size:9px;margin-top:2px;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '🪙</div>';
+      b.innerHTML = a.t + '<div style="font-size:.46em;opacity:.9">' + a.n + '</div><div style="font-size:.5em;margin-top:.2em;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '🪙</div>';
       const fire = () => {
         const h = hostP(), now = performance.now() / 1000;
         if (!h || !h.alive || (cds[a.k] || 0) > now) return;
