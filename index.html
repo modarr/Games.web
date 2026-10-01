@@ -62,7 +62,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:var(--bo
 /* overlay / chroma modes */
 body.overlay,body.overlay html{background:transparent}
 body.overlay #game{background:transparent;box-shadow:none;cursor:none}
-body.overlay #cv{pointer-events:none}
+body.overlay:not(.studio) #cv{pointer-events:none}
 body.overlay #gear,body.overlay #panel,body.overlay #overlay{display:none!important}
 body.overlay #mute,body.overlay #self{opacity:0;transition:opacity .2s}
 body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visible,body.overlay #self:focus-visible{opacity:1}
@@ -275,9 +275,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   document.title = TEST ? 'Blade Bubbles TEST' : 'Blade Bubbles Overlay';
   const WS = Q.get('ws') || (TIKFINITY ? 'ws://127.0.0.1:' + (Q.get('port') || '21213') + '/' : '');
   if (OVERLAY) document.body.classList.add('overlay');
+  if (STUDIO) document.body.classList.add('studio');
   if (CHROMA && /^[0-9a-f]{3,6}$/i.test(CHROMA)) { document.documentElement.style.background = '#' + CHROMA; document.body.style.background = '#' + CHROMA; document.getElementById('game').style.background = '#' + CHROMA; }
 
-  const STUDIO_PTS = 96;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
+  const STUDIO_PTS = 170;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
   /* ---------- Config ---------- */
   const W = 540, H = 960, TAU = Math.PI * 2;
   const ARENA = { x0: 14, y0: 100, x1: W - 14, y1: H - 24 };
@@ -295,7 +296,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     shield: 2.2, hitCd: 0.16,
     dmgBase: 1.5, dmgPerBlade: 1.2, dmgPct: 0.012, steal: 0.35, killBonus: 6,
     bigGift: 100,                                    // coins needed for a spoken shout-out
-    roundSecs: 240, roundGap: 20                     // 4-minute rounds with a 20s break between
+    roundSecs: 240, roundGap: 20, roundSecsStudio: 180                     // 4-minute rounds with a 20s break between
   };
   // Approximate current coin prices (they change; the game only uses the coin value it receives)
   const GIFTS = [
@@ -542,7 +543,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     return r;
   }
   const bladeLen = p => p.r * 0.6 + 10;
-  const mult = p => Math.min(3.5, 1 + 0.5 * Math.log10(1 + (p.gifted || 0)));
+  const mult = p => Math.min(3.5, 1 + 0.5 * Math.log10(1 + (p.gifted || 0))) * (p.dbl > 0 ? 2 : 1) * (p.permanentDbl ? 2 : 1);
   const aliveList = () => players.filter(p => p.alive);
   // tiers tuned for small streams: even 1 coin (a Rose) gives a blade
   const tierOf = c => c >= 5000 ? 6 : c >= 1000 ? 5 : c >= 100 ? 4 : c >= 20 ? 3 : c >= 5 ? 2 : 1;
@@ -599,7 +600,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     makeFallback(p, bot ? pick(FACES) : null);
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
-    if (STUDIO && !bot) { p.points = STUDIO_PTS; p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; }
+    if (STUDIO && !bot) { p.points = STUDIO_PTS; p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
     roster.set(key, p); players.push(p);
     if (!silent) { feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
@@ -643,6 +644,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     $('gpgift').textContent = '🎁 ' + giftName;
     el.classList.add('on');
     giftPopT = setTimeout(() => el.classList.remove('on'), 3200);
+  }
+  function welcome(p) {
+    p.shield = 30; p.graceT = 60;
+    setTimeout(() => {
+      if (!p.alive) return;
+      giftPop(p, ''); $('gpgift').textContent = "🚀 LET'S GO!";
+      banner("🚀 LET'S GO " + p.name.toUpperCase() + "!", 'shielded for 30 seconds', 'big', 3.2);
+      ring(p.x, p.y, '#35e0ff', p.r + 70, .8, 5); spark(p.x, p.y, '#35e0ff', 26, 260, .9); sfx.gift(2);
+    }, 450);
   }
   function renderLB() {
     const al = aliveList().sort((a, b) => b.points - a.points);
@@ -691,7 +701,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     showMotiv(MOTIV[motivIdx](pk));
   }
   function intro() {
-    round.num = 1; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
+    round.num = 1; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
     $('roundbar').textContent = '⚔️ Round 1 · ' + fmtT(round.t) + ' left';
   }
   setTimeout(() => { motivate(); setInterval(motivate, 60000); }, 30000);
@@ -701,7 +711,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   howTick(); setInterval(howTick, 6000);
 
   /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
-  const round = { t: CFG.roundSecs, phase: 'play', num: 1, calledHalf: false, called30: false };
+  const ROUND_SECS = STUDIO ? CFG.roundSecsStudio : CFG.roundSecs;
+  const round = { t: ROUND_SECS, phase: 'play', num: 1, calledHalf: false, called30: false };
   function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   let crownT = null;
   function callLeader(prefix) {
@@ -719,7 +730,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (round.phase === 'play') {
       bar.classList.toggle('hot', round.t <= 10);
       bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + (leader ? ' · 👑 ' + leader.name : '');
-      const half = CFG.roundSecs / 2;
+      const half = ROUND_SECS / 2;
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
       // big catchy center countdown for the last 10 seconds, one punchy beat per second
@@ -752,6 +763,14 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       $('winbig').classList.add('on');
       ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
       sfx.horn(); shake(3);
+      if (STUDIO) {
+        for (let i = 0; i < 6; i++) setTimeout(() => {
+          const hue = Math.random() * 360;
+          ring(w.x, w.y, 'hsl(' + hue + ',100%,65%)', w.r + 60 + i * 20, .8, 4);
+          spark(w.x, w.y, 'hsl(' + hue + ',100%,70%)', 24, 260, 1);
+          sfx.gift(3);
+        }, i * 220);
+      }
       feed('👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
       setTimeout(() => $('winbig').classList.remove('on'), CFG.roundGap > 6 ? 5000 : (CFG.roundGap - 1) * 1000);
     } else {
@@ -762,7 +781,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
   }
   function startRound() {
-    round.num++; round.phase = 'play'; round.t = CFG.roundSecs; round.calledHalf = false; round.called30 = false;
+    round.num++; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
     showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!');
     feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
@@ -784,14 +803,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (!p.alive) {
         if (time - p.diedAt < 2.5) return;
         p.blades = 0; p.bombs = 0; p.lightning = 0; p.gifted = 0;
-        spawnPlayer(p, STUDIO ? STUDIO_PTS : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; }
+        spawnPlayer(p, STUDIO ? STUDIO_PTS : 8); if (STUDIO) { p.blades = 2; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
     const x = p.x, y = p.y - p.r;
     const count = clamp(parseInt(e.count, 10) || 1, 1, 50);
     if (type === 'tap' || type === 'like') {
-      addPoints(p, CFG.pts.tap * count);
+      if (STUDIO) {
+        onGift(p, clamp(2 * count, 1, 90), 'Tap');
+      } else {
+        addPoints(p, CFG.pts.tap * count);
+      }
       p.vx += Math.cos(p.heading) * 22; p.vy += Math.sin(p.heading) * 22;
       if (time - p.lastFloat > .18) { p.lastFloat = time; floater(x, y, '+' + count, '#fff', 13); }
       sfx.tap();
@@ -912,6 +935,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function hurt(v, dmg, a, mode) {
     if (!v.alive) return;
+    if (STUDIO && v.graceT > 0) dmg *= .08;
+    if (STUDIO && v.name === 'chillax') { if (a && a !== v) v.lastAtk = a; dmg = Math.min(dmg, Math.max(0, v.points - 8)); }
     dmg = Math.min(dmg, v.points); if (dmg <= 0) return;
     v.points -= dmg; v.flash = .12;
     if (a && a !== v && a.alive) a.points += dmg * (mode === 'blade' ? CFG.steal : CFG.steal * .5);
@@ -1020,7 +1045,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
 
     for (const p of alive) {
-      if (STUDIO && !p.filler) p.points = Math.max(4, p.points - dt * (0.9 + p.points * 0.008));
+      if (STUDIO && p.graceT > 0) p.graceT = Math.max(0, p.graceT - dt);
+      if (STUDIO && !p.filler && !(p.graceT > 0)) p.points = Math.max(4, p.points - dt * (0.9 + p.points * 0.008));
       p.tr = radFor(p.points) * sizeScale;
       p.r += clamp(p.tr - p.r, -CFG.shrinkRate * dt, CFG.growRate * dt);   // growth is rate-limited
       p.pulse = Math.max(0, p.pulse - dt * 4); p.flash = Math.max(0, p.flash - dt);
@@ -1362,11 +1388,11 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- Tap a bubble directly (host testing) ---------- */
   cv.addEventListener('pointerdown', e => {
-    if (OVERLAY) return;
+    if (OVERLAY && !STUDIO) return;
     e.preventDefault();
     const r = cv.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
-    for (const p of aliveList().sort((a, b) => a.r - b.r)) if (Math.hypot(p.x - x, p.y - y) <= p.r + 6) { event({ type: 'tap', user: p.name }); break; }
+    for (const p of aliveList().sort((a, b) => a.r - b.r)) if (Math.hypot(p.x - x, p.y - y) <= p.r + 6) { event({ type: 'tap', user: p.name, bot: STUDIO }); break; }
   });
 
   /* ---------- Host-only: press and hold a bubble to grant it a blade ---------- */
@@ -1420,10 +1446,74 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   botTick();
 
+
+  /* ---------- Flags drawn in code (emoji flags don't show on Windows) ---------- */
+  const FLAGS = {
+    ps: { name: 'Palestine', d(g, S) { band(g, S, ['#000', '#fff', '#0a8a3a'], 'h'); g.fillStyle = '#d0202e'; g.beginPath(); g.moveTo(0, 0); g.lineTo(S * .46, S / 2); g.lineTo(0, S); g.closePath(); g.fill(); } },
+    il: { name: 'Israel', d(g, S) {
+      g.fillStyle = '#fff'; g.fillRect(0, 0, S, S); g.fillStyle = '#0038b8'; g.fillRect(0, S * .13, S, S * .12); g.fillRect(0, S * .75, S, S * .12);
+      g.strokeStyle = '#0038b8'; g.lineWidth = S * .035; g.lineJoin = 'miter';
+      for (const up of [1, -1]) { g.beginPath(); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 * up + i * TAU / 3; const x = S / 2 + Math.cos(a) * S * .21, y = S / 2 + Math.sin(a) * S * .21; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.stroke(); }
+    } },
+    in: { name: 'India', d(g, S) {
+      band(g, S, ['#ff9933', '#fff', '#138808'], 'h'); g.strokeStyle = '#000080'; g.lineWidth = S * .02; g.beginPath(); g.arc(S / 2, S / 2, S * .11, 0, TAU); g.stroke();
+      g.lineWidth = S * .01; g.beginPath(); for (let i = 0; i < 12; i++) { const a = i * TAU / 12; g.moveTo(S / 2, S / 2); g.lineTo(S / 2 + Math.cos(a) * S * .11, S / 2 + Math.sin(a) * S * .11); } g.stroke();
+    } },
+    uk: { name: 'UK', d(g, S) {
+      g.fillStyle = '#012169'; g.fillRect(0, 0, S, S); g.lineCap = 'butt';
+      g.strokeStyle = '#fff'; g.lineWidth = S * .2; g.beginPath(); g.moveTo(0, 0); g.lineTo(S, S); g.moveTo(S, 0); g.lineTo(0, S); g.stroke();
+      g.strokeStyle = '#c8102e'; g.lineWidth = S * .07; g.beginPath(); g.moveTo(0, 0); g.lineTo(S, S); g.moveTo(S, 0); g.lineTo(0, S); g.stroke();
+      g.fillStyle = '#fff'; g.fillRect(S * .38, 0, S * .24, S); g.fillRect(0, S * .38, S, S * .24);
+      g.fillStyle = '#c8102e'; g.fillRect(S * .44, 0, S * .12, S); g.fillRect(0, S * .44, S, S * .12);
+    } },
+    us: { name: 'USA', d(g, S) {
+      for (let i = 0; i < 13; i++) { g.fillStyle = i % 2 ? '#fff' : '#b22234'; g.fillRect(0, i * S / 13, S, S / 13 + 1); }
+      g.fillStyle = '#3c3b6e'; g.fillRect(0, 0, S * .52, S * 7 / 13);
+      g.fillStyle = '#fff'; for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) { g.beginPath(); g.arc(S * (.06 + c * .095), S * (.06 + r * .12), S * .019, 0, TAU); g.fill(); }
+    } },
+    ca: { name: 'Canada', d(g, S) {
+      g.fillStyle = '#d52b1e'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(S * .25, 0, S * .5, S);
+      const P = [[0, -1], [.15, -.7], [.35, -.75], [.3, -.35], [.65, -.5], [.55, -.2], [.95, -.05], [.6, .25], [.7, .5], [.25, .4], [.05, .4], [.05, .95], [-.05, .95], [-.05, .4], [-.25, .4], [-.7, .5], [-.6, .25], [-.95, -.05], [-.55, -.2], [-.65, -.5], [-.3, -.35], [-.35, -.75], [-.15, -.7]];
+      g.fillStyle = '#d52b1e'; g.beginPath(); P.forEach((q, i) => { const x = S / 2 + q[0] * S * .2, y = S / 2 + q[1] * S * .2; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.fill();
+    } },
+    fr: { name: 'France', d(g, S) { band(g, S, ['#0055a4', '#fff', '#ef4135'], 'v'); } },
+    de: { name: 'Germany', d(g, S) { band(g, S, ['#000', '#dd0000', '#ffce00'], 'h'); } },
+    it: { name: 'Italy', d(g, S) { band(g, S, ['#009246', '#fff', '#ce2b37'], 'v'); } },
+    ie: { name: 'Ireland', d(g, S) { band(g, S, ['#169b62', '#fff', '#ff883e'], 'v'); } },
+    nl: { name: 'Netherlands', d(g, S) { band(g, S, ['#ae1c28', '#fff', '#21468b'], 'h'); } },
+    ru: { name: 'Russia', d(g, S) { band(g, S, ['#fff', '#0039a6', '#d52b1e'], 'h'); } },
+    ua: { name: 'Ukraine', d(g, S) { band(g, S, ['#0057b7', '#ffd700'], 'h'); } },
+    ng: { name: 'Nigeria', d(g, S) { band(g, S, ['#008751', '#fff', '#008751'], 'v'); } },
+    mx: { name: 'Mexico', d(g, S) { band(g, S, ['#006847', '#fff', '#ce1126'], 'v'); g.fillStyle = '#8a5a2b'; g.beginPath(); g.arc(S / 2, S / 2, S * .09, 0, TAU); g.fill(); } },
+    ar: { name: 'Argentina', d(g, S) { band(g, S, ['#74acdf', '#fff', '#74acdf'], 'h'); g.fillStyle = '#f6b40e'; g.beginPath(); g.arc(S / 2, S / 2, S * .07, 0, TAU); g.fill(); } },
+    es: { name: 'Spain', d(g, S) { g.fillStyle = '#aa151b'; g.fillRect(0, 0, S, S); g.fillStyle = '#f1bf00'; g.fillRect(0, S * .25, S, S * .5); } },
+    eg: { name: 'Egypt', d(g, S) { band(g, S, ['#ce1126', '#fff', '#000'], 'h'); g.fillStyle = '#c09300'; g.beginPath(); g.arc(S / 2, S / 2, S * .07, 0, TAU); g.fill(); } },
+    jo: { name: 'Jordan', d(g, S) { band(g, S, ['#000', '#fff', '#007a3d'], 'h'); g.fillStyle = '#ce1126'; g.beginPath(); g.moveTo(0, 0); g.lineTo(S * .5, S / 2); g.lineTo(0, S); g.closePath(); g.fill(); g.fillStyle = '#fff'; star(g, S * .16, S / 2, S * .07, S * .03, 7); } },
+    se: { name: 'Sweden', d(g, S) { g.fillStyle = '#006aa7'; g.fillRect(0, 0, S, S); g.fillStyle = '#fecc00'; g.fillRect(S * .3, 0, S * .14, S); g.fillRect(0, S * .43, S, S * .14); } },
+    ch: { name: 'Switzerland', d(g, S) { g.fillStyle = '#d52b1e'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(S * .43, S * .2, S * .14, S * .6); g.fillRect(S * .2, S * .43, S * .6, S * .14); } },
+    jp: { name: 'Japan', d(g, S) { g.fillStyle = '#fff'; g.fillRect(0, 0, S, S); g.fillStyle = '#bc002d'; g.beginPath(); g.arc(S / 2, S / 2, S * .26, 0, TAU); g.fill(); } },
+    br: { name: 'Brazil', d(g, S) { g.fillStyle = '#009c3b'; g.fillRect(0, 0, S, S); g.fillStyle = '#ffdf00'; g.beginPath(); g.moveTo(S / 2, S * .1); g.lineTo(S * .92, S / 2); g.lineTo(S / 2, S * .9); g.lineTo(S * .08, S / 2); g.closePath(); g.fill(); g.fillStyle = '#002776'; g.beginPath(); g.arc(S / 2, S / 2, S * .2, 0, TAU); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = S * .03; g.beginPath(); g.arc(S / 2, S * .62, S * .24, Math.PI * 1.2, Math.PI * 1.8); g.stroke(); } },
+    tr: { name: 'Turkey', d(g, S) { g.fillStyle = '#e30a17'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.beginPath(); g.arc(S * .4, S / 2, S * .22, 0, TAU); g.fill(); g.fillStyle = '#e30a17'; g.beginPath(); g.arc(S * .46, S / 2, S * .175, 0, TAU); g.fill(); g.fillStyle = '#fff'; star(g, S * .64, S / 2, S * .09, S * .036, 5); } },
+    pk: { name: 'Pakistan', d(g, S) { g.fillStyle = '#01411c'; g.fillRect(0, 0, S, S); g.fillStyle = '#fff'; g.fillRect(0, 0, S * .25, S); g.beginPath(); g.arc(S * .6, S / 2, S * .21, 0, TAU); g.fill(); g.fillStyle = '#01411c'; g.beginPath(); g.arc(S * .66, S * .45, S * .18, 0, TAU); g.fill(); g.fillStyle = '#fff'; star(g, S * .72, S * .4, S * .07, S * .028, 5); } },
+    cn: { name: 'China', d(g, S) { g.fillStyle = '#de2910'; g.fillRect(0, 0, S, S); g.fillStyle = '#ffde00'; star(g, S * .25, S * .27, S * .14, S * .056, 5); [[.5, .12], [.58, .24], [.58, .4], [.5, .52]].forEach(q => star(g, S * q[0], S * q[1], S * .04, S * .016, 5)); } }
+  };
+  function band(g, S, cols, dir) { const n = cols.length; cols.forEach((c, i) => { g.fillStyle = c; if (dir === 'h') g.fillRect(0, i * S / n, S, S / n + 1); else g.fillRect(i * S / n, 0, S / n + 1, S); }); }
+  function star(g, cx, cy, R, r, n) { g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, rr = i % 2 ? r : R; const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill(); }
+  const flagCache = {};
+  function flagCanvas(code) {
+    if (flagCache[code]) return flagCache[code];
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    FLAGS[code].d(g, 128); flagCache[code] = c; return c;
+  }
+  const FLAG_BY_NAME = {}; Object.keys(FLAGS).forEach(k => { FLAG_BY_NAME[FLAGS[k].name.toLowerCase()] = k; });
+  const RIVAL_NAMES = Object.keys(FLAGS).filter(k => k !== 'ps' && k !== 'il').map(k => FLAGS[k].name);
+  function funFace(p) { const k = FLAG_BY_NAME[p.name.toLowerCase()]; if (k) p.fb = flagCanvas(k); else makeFallback(p, pick(FACES)); }
+  window.__flagSheet = () => Object.keys(FLAGS).map(k => flagCanvas(k).toDataURL());
+
   /* ---------- Filler fighters: the arena is never empty; they stay until >15 real viewers are playing ---------- */
   const FILL_ARG = Q.get('fillers');
   const FILL_ON = FILL_ARG !== '0';
-  const FILL_N = clamp(parseInt(FILL_ARG, 10) || 6, 1, 20);
+  const FILL_N = clamp(parseInt(FILL_ARG, 10) || (STUDIO ? 4 : 6), 1, 20);
   const FILL_REAL_MAX = STUDIO ? 99999 : 15;
   const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
   const FILL_SAYS = ['⚔️', '🔥', 'GG', 'let\'s go!', 'pop!', '😈', 'boom', 'watch out', '💥', 'come at me'];
@@ -1438,11 +1528,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     return 'Fighter' + ri(100, 999);
   }
-  function spawnFiller(blades, pts) {
-    const p = joinPlayer(fillerName(), null, true, true);
+  function spawnFiller(blades, pts, forceName, flagCode) {
+    const p = joinPlayer(forceName || fillerName(), null, true, true);
     if (!p) return null;
-    p.filler = true;
-    p.points = pts || rf(12, 55);
+    p.filler = true; p.permanent = !!forceName;
+    if (flagCode) p.fb = flagCanvas(flagCode);
+    p.points = pts || (STUDIO ? rf(8, 26) : rf(12, 55));
     p.r = p.tr = radFor(p.points) * sizeScale;
     p.blades = blades != null ? blades : pick(FILL_BLADES);
     p.pulse = 2;
@@ -1489,23 +1580,70 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   if (FILL_ON) {
     const start = [1, 1, 2, 2, 3, 4, 0, 0, 1, 2, 0, 3, 1, 2, 0, 1, 2, 3, 0, 1];
-    for (let i = 0; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
+    const PERM = STUDIO ? [{ name: 'chillax', flag: 'ps' }, { name: 'Israel', flag: 'il' }] : [];
+    PERM.forEach((who, i) => setTimeout(() => { const b = spawnFiller(2, 30, who.name, who.flag); if (b) { b.permanent = true; if (who.name === 'Israel') b.permanentDbl = true; } }, 250 + i * 160));
+    for (let i = PERM.length; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
     setTimeout(() => { fillReady = true; }, 250 + FILL_N * 160 + 150);
     (function fillerLoop() { if (!document.hidden) fillerAct(); setTimeout(fillerLoop, rf(170, 330)); })();
     setInterval(() => {
       const real = realCount();
       if (real > FILL_REAL_MAX) fillRetired = true; else if (real <= FILL_REAL_MAX - 3) fillRetired = false;
       const fl = fillers();
-      if (fillRetired) { if (fl.length) retireFiller(fl.sort((a, b) => a.points - b.points)[0]); }
+      if (fillRetired) { const nonPerm = fl.filter(q => !q.permanent); if (nonPerm.length) retireFiller(nonPerm.sort((a, b) => a.points - b.points)[0]); }
       else if (fillReady) for (let k = Math.min(2, FILL_N - fl.length); k > 0; k--) spawnFiller();
       for (let i = players.length - 1; i >= 0; i--) {
         const q = players[i];
-        if (q.filler && !q.alive && time - q.diedAt > 4) { roster.delete(q.key); players.splice(i, 1); }
+        if (q.filler && !q.alive && time - q.diedAt > 4) {
+          const wasPerm = q.permanent, pname = q.name, pflag = q.flagCodeRef;
+          roster.delete(q.key); players.splice(i, 1);
+          if (wasPerm) { const b = spawnFiller(2, 30, pname, pname === 'chillax' ? 'ps' : pname === 'Israel' ? 'il' : null); if (b) { b.permanent = true; if (pname === 'Israel') b.permanentDbl = true; feed('👋 ' + pname + ' joined the fight', 'join'); sfx.join(); } }
+        }
       }
     }, 400);
   }
+  /* ---------- STUDIO: chillax action buttons (host support) ---------- */
+  if (STUDIO) {
+    const hostP = () => roster.get('chillax');
+    const cds = {};
+    const ACTS = [
+      { k: 'dbl', t: '×2', n: 'DOUBLE', cd: 20, fn: h => { h.dbl = 12; h.glow = 12; h.shield = Math.max(h.shield, 1); banner('×2 POWER!', '12 seconds', 'big', 2.2); ring(h.x, h.y, '#ffd23f', h.r + 90, .8, 6); spark(h.x, h.y, '#ffd23f', 34, 300, .9); sfx.gift(3); } },
+      { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: h => { h.lightning++; if (!zap(h, aliveList())) h.lightning--; } },
+      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: h => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); for (let i = 0; i < 7; i++) setTimeout(() => { const q = hostP(); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
+      { k: 'rev', t: '🔥', n: 'REVENGE', cd: 7, fn: h => {
+        let t = h.lastAtk && h.lastAtk.alive && h.lastAtk !== h ? h.lastAtk : aliveList().filter(q => q !== h).sort((a, b) => b.points - a.points)[0];
+        if (!t) return; banner('🔥 REVENGE!', t.name, 'big', 2.4); ring(h.x, h.y, '#ff5c2a', h.r + 80, .7, 6); shake(5);
+        for (let i = 0; i < 5; i++) setTimeout(() => { if (!t.alive) return; bombs.push({ sx: h.x, sy: h.y, tx: clamp(t.x + rf(-26, 26), ARENA.x0 + 10, ARENA.x1 - 10), ty: clamp(t.y + rf(-26, 26), ARENA.y0 + 10, ARENA.y1 - 10), t: 0, dur: .55, owner: h }); }, 250 + i * 200);
+        for (let i = 0; i < 3; i++) setTimeout(() => { if (!t.alive) return; meteors.push({ x: clamp(t.x + rf(-24, 24), ARENA.x0 + 20, ARENA.x1 - 20), y: clamp(t.y + rf(-24, 24), ARENA.y0 + 20, ARENA.y1 - 20), t: 0, fall: .6, owner: h }); }, 1400 + i * 220);
+        h.lastAtk = null; } },
+      { k: 'fw', t: '🎆', n: 'FIREWORKS', cd: 2, fn: h => {
+        const foes = aliveList().filter(q => q !== h).sort(() => Math.random() - .5).slice(0, 5);
+        foes.forEach((v, i) => setTimeout(() => { if (!v.alive) return; const hue = ri(0, 359); spark(v.x, v.y, 'hsl(' + hue + ',100%,68%)', 26, 270, 1.1); ring(v.x, v.y, 'hsl(' + hue + ',100%,70%)', 70, .5, 3); sfx.gift(2); if (v.shield <= 0) hurt(v, (7 + v.points * .03) * mult(h), h, 'zap'); }, i * 150));
+        h.points += 8; h.pulse = 2; } },
+      { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: h => { h.shield = Math.max(h.shield, 5); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
+    ];
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:6px;z-index:90;display:flex;justify-content:center;gap:6px;pointer-events:auto';
+    ACTS.forEach((a, i) => {
+      const b = document.createElement('button');
+      b.style.cssText = 'font:700 13px system-ui;color:#fff;background:rgba(20,10,50,.78);border:2px solid #35e0ff;border-radius:12px;padding:7px 8px;min-width:48px;cursor:pointer';
+      b.innerHTML = a.t + '<div style="font-size:8px;opacity:.85">' + a.n + '</div>';
+      const fire = () => {
+        const h = hostP(), now = performance.now() / 1000;
+        if (!h || !h.alive || (cds[a.k] || 0) > now) return;
+        cds[a.k] = now + a.cd; b.style.opacity = '.4'; setTimeout(() => b.style.opacity = '1', a.cd * 1000);
+        initAudio(); a.fn(h);
+      };
+      b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); fire(); });
+      document.addEventListener('keydown', e => { if (e.key === String(i + 1) && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) fire(); });
+      bar.appendChild(b);
+    });
+    document.body.appendChild(bar);
+  }
+
   window.TapArena.audio = () => (ac ? ac.state : 'none');
   window.TapArena.stats = () => ({ real: realCount(), fillers: fillers().length });
+  window.TapArena.dump = () => aliveList().map(p => ({ n: p.name, x: p.x, y: p.y, r: p.r, pts: Math.round(p.points), bl: p.blades, dbl: !!p.permanentDbl }));
+  window.TapArena.kill = n => { const q = roster.get(String(n).toLowerCase()); if (q) { q.alive = false; q.diedAt = time; } };
 
   /* ---------- Controls ---------- */
   GIFTS.forEach(g => {
