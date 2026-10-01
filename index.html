@@ -546,6 +546,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const parts = [], rings = [], floats = [], bolts = [], bombs = [], nukes = [], meteors = [], sched = [];
   const orbs = []; let orbSpawnT = 8;
   let uid = 0, time = 0, shakeAmp = 0, flash = 0, spot = null, sizeScale = 1, leader = null;
+  let champion = null, championName = null;   // persistent crown holder: only changes when someone overtakes
 
   function radFor(pts) {
     let r = CFG.baseR + CFG.rK * Math.sqrt(Math.max(pts, 0));
@@ -660,7 +661,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function welcome(p) {
     p.shield = 30; p.graceT = 60;
-    setTimeout(() => dropMany(p, 2, 450), 900);
     setTimeout(() => {
       if (!p.alive) return;
       giftPop(p, ''); $('gpgift').textContent = "🚀 LET'S GO!";
@@ -743,7 +743,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.t -= dt;
     if (round.phase === 'play') {
       bar.classList.toggle('hot', round.t <= 10);
-      bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + (leader ? ' · 👑 ' + leader.name : '');
+      bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + ((championName || (leader && leader.name)) ? ' · 👑 ' + (championName || leader.name) : '');
       const half = ROUND_SECS / 2;
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
@@ -767,11 +767,31 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (round.t <= 0) startRound();
     }
   }
+  function checkCrown(cand) {
+    if (!cand || !cand.alive) return;
+    if (!champion) { champion = cand; championName = cand.name; return; }
+    if (cand === champion) return;
+    if (champion.alive && champion.points + 5 >= cand.points) return;
+    // overtake! crown changes hands right now, live
+    const old = championName;
+    champion = cand; championName = cand.name;
+    banner('👑 NEW CHAMPION!', cand.name + ' overtakes ' + old, 'big', 2.6);
+    feed('👑 ' + cand.name + ' took the crown from ' + old + '!', 'gift');
+    ring(cand.x, cand.y, '#ffd23f', cand.r + 90, 1, 6); spark(cand.x, cand.y, '#ffd23f', 36, 300, 1);
+    shake(4); sfx.horn();
+    { const el = $('crownpop'); clearTimeout(crownT); $('cpname').textContent = cand.name; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); sfx.crown(); crownT = setTimeout(() => el.classList.remove('on'), 3000); }
+    for (let i = 0; i < 5; i++) setTimeout(() => {
+      const hue = Math.random() * 360;
+      ring(cand.x, cand.y, 'hsl(' + hue + ',100%,65%)', cand.r + 50 + i * 18, .7, 4);
+      spark(cand.x, cand.y, 'hsl(' + hue + ',100%,70%)', 18, 240, .9);
+    }, i * 150);
+  }
   function endRound() {
     const al = aliveList().sort((a, b) => b.points - a.points);
     round.phase = 'gap'; round.t = CFG.roundGap;
     if (al.length) {
       const w = al[0];
+      champion = w; championName = w.name;
       $('winname').textContent = '👑 ' + w.name;
       $('winsub').textContent = 'Round ' + round.num + ' champion · ' + Math.round(w.points).toLocaleString() + ' points';
       $('winbig').classList.add('on');
@@ -785,6 +805,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
           sfx.gift(3);
         }, i * 220);
       }
+      if (STUDIO) for (let i = 0; i < 9; i++) setTimeout(() => {
+        const fx = rf(ARENA.x0 + 40, ARENA.x1 - 40), fy = rf(ARENA.y0 + 60, ARENA.y1 - 200), hue = Math.random() * 360;
+        spark(fx, fy, 'hsl(' + hue + ',100%,68%)', 30, 280, 1.2); ring(fx, fy, 'hsl(' + hue + ',100%,70%)', 80, .7, 3); sfx.gift(2);
+      }, 300 + i * 260);
       feed('👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
       setTimeout(() => $('winbig').classList.remove('on'), CFG.roundGap > 6 ? 5000 : (CFG.roundGap - 1) * 1000);
     } else {
@@ -796,8 +820,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function startRound() {
     round.num++; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
-    showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!');
-    feed('⚔️ Round ' + round.num + ' begins!', 'join');
+    for (const p of players) if (p.alive) { p.points = STUDIO ? studioStartPts() : 8; p.pulse = 1; }
+    showMotiv('⚔️ Round ' + round.num + ' has begun! 🌹 Send a Rose for a blade!' + (championName ? ' 👑 ' + championName + ' defends the crown!' : ''));
+    feed('⚔️ Round ' + round.num + ' begins!' + (championName ? ' 👑 ' + championName + ' defends the crown.' : ''), 'join');
   }
 
 
@@ -826,7 +851,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (type === 'tap' || type === 'like') {
       if (STUDIO) {
         onGift(p, clamp(2 * count, 1, 90), 'Tap');
-        grabOrb(p, p.x, p.y); plinkoLike(p, count);
+        grabOrb(p, p.x, p.y);
       } else {
         addPoints(p, CFG.pts.tap * count);
       }
@@ -837,7 +862,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       addPoints(p, CFG.pts.comment);
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
       floater(x, y - 10, '+' + CFG.pts.comment, '#9fe8ff', 15); sfx.comment();
-      if (STUDIO) { grabOrb(p, p.x, p.y); plinkoComment(p); }
+      if (STUDIO) grabOrb(p, p.x, p.y);
     } else if (type === 'share') {
       addPoints(p, CFG.pts.share);
       floater(x, y - 10, '+' + CFG.pts.share + ' 🔗', '#ffd23f', 18);
@@ -1009,143 +1034,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
   }
 
-  /* ---------- PLINKO board (STUDIO) ---------- */
-  const PL = { x0: 110, x1: 430, top: 292, rows: 8, rowH: 36, slotY: 616, floor: 646, balls: [], pegs: [], flash: {}, slotFlash: [0,0,0,0,0,0,0], nextBot: 6 };
-  const PL_SLOTS = [
-    { id: 'jack', ic: '💎', c: '#ffd23f' }, { id: 'bad', ic: '😬', c: '#ff6b6b' }, { id: 'up', ic: '+40%', c: '#35e0ff' },
-    { id: 'mid', ic: '🛡', c: '#8affc1' }, { id: 'up', ic: '+40%', c: '#35e0ff' }, { id: 'bad', ic: '😬', c: '#ff6b6b' }, { id: 'jack', ic: '💎', c: '#ffd23f' }
-  ];
-  const PL_SW = (PL.x1 - PL.x0) / PL_SLOTS.length;
-  (function () {
-    for (let r = 0; r < PL.rows; r++) {
-      const odd = r % 2, n = odd ? 7 : 8, y = 322 + r * PL.rowH;
-      for (let k = 0; k < n; k++) PL.pegs.push({ x: (odd ? 150 : 130) + k * 40, y, row: r, id: PL.pegs.length });
-    }
-  })();
-  const PL_NOTES = [523, 587, 659, 784, 880, 1047, 1175, 1319];
-  const plSfx = {
-    drop() { if (!ok('pld', 90)) return; tone(520, 0, .09, 'sine', .035, 760); },
-    peg(row) { if (!ok('plp', 55)) return; const f = PL_NOTES[(row + ri(0, 3)) % PL_NOTES.length]; tone(f, 0, .11, 'sine', .028); tone(f * 2, 0, .06, 'triangle', .008); },
-    good() { [523, 659, 784].forEach((f, i) => { tone(f, i * .07, .22, 'sine', .07); tone(f * 2, i * .07, .1, 'triangle', .015); }); },
-    jack() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => { tone(f, i * .08, .3, 'sine', .08); tone(f * 2, i * .08, .14, 'triangle', .02); }); noise(.45, .3, .03, 5000, 1); },
-    bad() { tone(392, 0, .2, 'sine', .05, 330); tone(294, .12, .25, 'sine', .045, 247); }
-  };
-  function plCount(p) { let n = 0; for (const b of PL.balls) if (b.owner === p) n++; return n; }
-  function dropBall(p, o) {
-    o = o || {};
-    if (!p || !p.alive || PL.balls.length >= 40 || plCount(p) >= (o.force ? 12 : 6)) return false;
-    PL.balls.push({ x: 270 + rf(-45, 45), y: PL.top - 10, vx: rf(-30, 30), vy: 0, r: o.mult > 1 ? 11 : 7, owner: p, name: p.name, hue: p.hue, mult: o.mult || 1, lucky: !!o.lucky, trail: [], t: 0 });
-    plSfx.drop();
-    return true;
-  }
-  function dropMany(p, n, gap, o) { for (let i = 0; i < n; i++) setTimeout(() => dropBall(p, Object.assign({ force: true }, o)), i * gap); }
-  function plinkoComment(p) { const n = time; if (n - (p.plCd || 0) < 2.5) return; p.plCd = n; dropBall(p); }
-  function plinkoLike(p, count) { p.likeAcc = (p.likeAcc || 0) + count; while (p.likeAcc >= 10) { p.likeAcc -= 10; dropBall(p); } }
-  function plLand(b, idx) {
-    const p = b.owner, sl = PL_SLOTS[idx], sx = PL.x0 + (idx + .5) * PL_SW, sy = PL.slotY + 8;
-    PL.slotFlash[idx] = 1;
-    spark(sx, sy, sl.c, 14, 190, .8); ring(sx, sy, sl.c, 60, .5, 3);
-    let id = sl.id; if (b.mult > 1 && id === 'bad') id = 'up';
-    if (!p || !p.alive) return;
-    const m = b.mult;
-    if (id === 'jack') {
-      const g = Math.max(60, p.points * 1.0) * (m > 1 ? 1.5 : 1);
-      addPoints(p, g); p.blades = Math.min(CFG.maxBlades, p.blades + 1); p.pulse = 2;
-      banner('💎 JACKPOT ' + p.name.toUpperCase(), '+' + Math.round(g) + ' points!', 'big', 2.6);
-      feed('💎 ' + p.name + ' hit the JACKPOT!', 'gift');
-      ring(p.x, p.y, '#ffd23f', p.r + 90, .8, 6); spark(p.x, p.y, '#ffe27a', 34, 300, 1.1); sfx.gift(3); plSfx.jack();
-    } else if (id === 'up') {
-      const g = Math.max(20, p.points * .4) * (m > 1 ? 1.5 : 1);
-      addPoints(p, g); floater(p.x, p.y - p.r - 8, '+' + Math.round(g), '#35e0ff', 20);
-      ring(p.x, p.y, '#35e0ff', p.r + 50, .6, 4); spark(p.x, p.y, '#9fe8ff', 16, 220, .8); plSfx.good();
-    } else if (id === 'mid') {
-      const g = Math.max(12, p.points * .2) * (m > 1 ? 1.5 : 1);
-      addPoints(p, g); p.shield = Math.max(p.shield, 8);
-      floater(p.x, p.y - p.r - 8, '🛡 +' + Math.round(g), '#8affc1', 20);
-      ring(p.x, p.y, '#8affc1', p.r + 55, .6, 4); plSfx.good();
-    } else {
-      p.points = Math.max(4, p.points * .85);
-      floater(p.x, p.y - p.r - 8, '😬 -15%', '#ff6b6b', 18); plSfx.bad();
-    }
-  }
-  function updatePlinko(dt) {
-    PL.nextBot -= dt;
-    if (PL.nextBot <= 0) { PL.nextBot = rf(4, 8); const al = aliveList(); if (al.length) dropBall(al[ri(0, al.length - 1)]); }
-    for (let i = 0; i < 7; i++) if (PL.slotFlash[i] > 0) PL.slotFlash[i] = Math.max(0, PL.slotFlash[i] - dt * 2.2);
-    for (const k in PL.flash) { PL.flash[k] -= dt * 4; if (PL.flash[k] <= 0) delete PL.flash[k]; }
-    const steps = 2, h = dt / steps;
-    for (let i = PL.balls.length - 1; i >= 0; i--) {
-      const b = PL.balls[i]; let done = false; b.t += dt;
-      for (let st = 0; st < steps && !done; st++) {
-        b.vy += 520 * h;
-        if (b.lucky && b.y > 420) { const tx = PL.x0 + (b.x < 270 ? .5 : 6.5) * PL_SW; b.vx += (tx - b.x) * 6 * h; b.vx *= (1 - 1.2 * h); }
-        b.x += b.vx * h; b.y += b.vy * h;
-        if (b.y < PL.slotY) {
-          if (b.x < PL.x0 + b.r) { b.x = PL.x0 + b.r; b.vx = Math.abs(b.vx) * .6; }
-          if (b.x > PL.x1 - b.r) { b.x = PL.x1 - b.r; b.vx = -Math.abs(b.vx) * .6; }
-          for (const pg of PL.pegs) {
-            const dx = b.x - pg.x, dy = b.y - pg.y, rr = b.r + 5, d2 = dx * dx + dy * dy;
-            if (d2 < rr * rr && d2 > .01) {
-              const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
-              b.x = pg.x + nx * rr; b.y = pg.y + ny * rr;
-              const vn = b.vx * nx + b.vy * ny;
-              if (vn < 0) { b.vx -= 1.55 * vn * nx; b.vy -= 1.55 * vn * ny; }
-              b.vx += rf(-14, 14);
-              PL.flash[pg.id] = 1; plSfx.peg(pg.row);
-              if (Math.random() < .35) spark(pg.x, pg.y, 'hsl(' + b.hue + ',100%,75%)', 3, 80, .35);
-            }
-          }
-        } else {
-          const idx = clamp(Math.floor((b.x - PL.x0) / PL_SW), 0, PL_SLOTS.length - 1);
-          const lo = PL.x0 + idx * PL_SW + b.r, hi = PL.x0 + (idx + 1) * PL_SW - b.r;
-          b.x = clamp(b.x, lo, hi); b.vx *= .5;
-          if (b.y >= PL.floor) { plLand(b, idx); done = true; }
-        }
-      }
-      b.trail.push(b.x, b.y); if (b.trail.length > 16) b.trail.splice(0, 2);
-      if (done || b.t > 12) PL.balls.splice(i, 1);
-    }
-  }
-  function drawPlinkoBoard() {
-    ctx.save();
-    ctx.fillStyle = 'rgba(8,4,34,.55)'; ctx.strokeStyle = 'rgba(160,140,255,.35)'; ctx.lineWidth = 2;
-    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(PL.x0 - 12, PL.top - 22, PL.x1 - PL.x0 + 24, PL.floor - PL.top + 36, 18); else ctx.rect(PL.x0 - 12, PL.top - 22, PL.x1 - PL.x0 + 24, PL.floor - PL.top + 36);
-    ctx.fill(); ctx.stroke();
-    for (const pg of PL.pegs) {
-      const f = PL.flash[pg.id] || 0;
-      ctx.fillStyle = f > 0 ? 'rgba(255,240,150,' + (.55 + .45 * f) + ')' : 'rgba(220,225,255,.75)';
-      ctx.beginPath(); ctx.arc(pg.x, pg.y, 4 + f * 2.5, 0, TAU); ctx.fill();
-    }
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let i = 0; i < PL_SLOTS.length; i++) {
-      const sl = PL_SLOTS[i], x = PL.x0 + i * PL_SW, fl = PL.slotFlash[i];
-      ctx.fillStyle = sl.c; ctx.globalAlpha = .16 + fl * .55;
-      ctx.fillRect(x + 2, PL.slotY, PL_SW - 4, PL.floor - PL.slotY);
-      ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(220,225,255,.5)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x, PL.slotY - 4); ctx.lineTo(x, PL.floor); ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = '700 ' + (sl.ic.length > 2 ? 11 : 18) + 'px system-ui'; ctx.fillText(sl.ic, x + PL_SW / 2, PL.slotY + (PL.floor - PL.slotY) / 2);
-    }
-    ctx.beginPath(); ctx.moveTo(PL.x1, PL.slotY - 4); ctx.lineTo(PL.x1, PL.floor); ctx.stroke();
-    ctx.restore();
-  }
-  function drawPlinkoBalls() {
-    for (const b of PL.balls) {
-      ctx.save();
-      for (let i = 0; i < b.trail.length; i += 2) {
-        const a = i / b.trail.length;
-        ctx.globalAlpha = a * .35; ctx.fillStyle = b.mult > 1 ? '#ffd23f' : 'hsl(' + b.hue + ',100%,70%)';
-        ctx.beginPath(); ctx.arc(b.trail[i], b.trail[i + 1], b.r * (.35 + a * .5), 0, TAU); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = b.mult > 1 ? '#ffd23f' : 'hsl(' + b.hue + ',100%,62%)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); ctx.stroke();
-      if (b.lucky) { ctx.strokeStyle = '#8affc1'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, 0, TAU); ctx.stroke(); }
-      ctx.fillStyle = '#fff'; ctx.font = '700 10px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)';
-      ctx.strokeText(b.name, b.x, b.y - b.r - 6); ctx.fillText(b.name, b.x, b.y - b.r - 6);
-      ctx.restore();
-    }
-  }
-
   function hurt(v, dmg, a, mode) {
     if (!v.alive) return;
     if (STUDIO && v.graceT > 0) dmg *= .08;
@@ -1253,10 +1141,11 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function update(dt) {
     time += dt;
     roundTick(dt);
-    if (STUDIO) { updateOrbs(dt); updatePlinko(dt); }
+    if (STUDIO) updateOrbs(dt);
     const alive = aliveList();
     sizeScale = clamp(1 - (alive.length - CFG.crowdStart) * CFG.crowdStep, CFG.crowdMin, 1);
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
+    checkCrown(leader);
 
     for (const p of alive) {
       if (STUDIO && p.graceT > 0) p.graceT = Math.max(0, p.graceT - dt);
@@ -1469,7 +1358,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.strokeText(bd.trim(), 0, by); ctx.fillText(bd.trim(), 0, by);
     }
     // crown
-    if (p === leader && aliveList().length >= 2) { ctx.font = Math.round(clamp(r * .5, 16, 30)) + 'px sans-serif'; ctx.save(); ctx.translate(0, -r - 6); ctx.rotate(-.18); ctx.fillText('👑', 0, 0); ctx.restore(); }
+    if (championName && p.name === championName) { ctx.font = Math.round(clamp(r * .55, 18, 34)) + 'px sans-serif'; ctx.save(); ctx.translate(0, -r - 6); ctx.rotate(-.18); ctx.fillText('👑', 0, 0); ctx.restore(); }
     // comment bubble
     if (p.commentT > 0 && p.text) {
       ctx.globalAlpha = Math.min(1, p.commentT * 2);
@@ -1498,7 +1387,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (ctx.roundRect) ctx.roundRect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0, 28); else ctx.rect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0);
     ctx.stroke(); ctx.restore();
 
-    if (STUDIO) { drawPlinkoBoard(); drawOrbs(); }
+    if (STUDIO) drawOrbs();
 
     // meteor telegraphs and streaks
     for (const m of meteors) {
@@ -1526,7 +1415,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, TAU); ctx.stroke(); ctx.shadowBlur = 0;
       }
     }
-    if (STUDIO) drawPlinkoBalls();
     for (const r of rings) {
       const k = r.t / r.life;
       ctx.globalAlpha = 1 - k; ctx.lineWidth = r.width * (1 - k * .6); ctx.strokeStyle = r.color;
@@ -1825,17 +1713,25 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const hostP = () => roster.get('chillax');
     const cds = {};
     const ACTS = [
-      { k: 'drop', t: '🎱', n: 'DROP', cd: 2, fn: h => { dropBall(h, { force: true }); } },
-      { k: 'triple', t: '🎱×3', n: 'TRIPLE', cd: 8, fn: h => { dropMany(h, 3, 260); } },
-      { k: 'mega', t: '💎', n: 'MEGA BALL', cd: 14, fn: h => { dropBall(h, { force: true, mult: 3 }); banner('💎 MEGA BALL', h.name, 'big', 2); } },
-      { k: 'rain', t: '🌧', n: 'BALL RAIN', cd: 20, fn: h => { dropMany(h, 8, 200); banner('🌧 BALL RAIN!', h.name, 'big', 2.2); } },
-      { k: 'lucky', t: '🍀', n: 'LUCKY', cd: 25, fn: h => { dropBall(h, { force: true, lucky: true, mult: 2 }); banner('🍀 LUCKY BALL', 'headed for the jackpot', 'big', 2.4); } },
-      { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: h => { h.shield = Math.max(h.shield, 8); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
+      { k: 'dbl', t: '×2', n: 'DOUBLE', cd: 20, fn: h => { h.dbl = 12; h.glow = 12; h.shield = Math.max(h.shield, 1); banner('×2 POWER!', '12 seconds', 'big', 2.2); ring(h.x, h.y, '#ffd23f', h.r + 90, .8, 6); spark(h.x, h.y, '#ffd23f', 34, 300, .9); sfx.gift(3); } },
+      { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: h => { h.lightning++; if (!zap(h, aliveList())) h.lightning--; } },
+      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: h => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); const key = h.key; for (let i = 0; i < 7; i++) setTimeout(() => { const q = roster.get(key); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
+      { k: 'rev', t: '🔥', n: 'REVENGE', cd: 7, fn: h => {
+        let t = h.lastAtk && h.lastAtk.alive && h.lastAtk !== h ? h.lastAtk : aliveList().filter(q => q !== h).sort((a, b) => b.points - a.points)[0];
+        if (!t) return; banner('🔥 REVENGE!', t.name, 'big', 2.4); ring(h.x, h.y, '#ff5c2a', h.r + 80, .7, 6); shake(5);
+        for (let i = 0; i < 5; i++) setTimeout(() => { if (!t.alive) return; bombs.push({ sx: h.x, sy: h.y, tx: clamp(t.x + rf(-26, 26), ARENA.x0 + 10, ARENA.x1 - 10), ty: clamp(t.y + rf(-26, 26), ARENA.y0 + 10, ARENA.y1 - 10), t: 0, dur: .55, owner: h }); }, 250 + i * 200);
+        for (let i = 0; i < 3; i++) setTimeout(() => { if (!t.alive) return; meteors.push({ x: clamp(t.x + rf(-24, 24), ARENA.x0 + 20, ARENA.x1 - 20), y: clamp(t.y + rf(-24, 24), ARENA.y0 + 20, ARENA.y1 - 20), t: 0, fall: .6, owner: h }); }, 1400 + i * 220);
+        h.lastAtk = null; } },
+      { k: 'fw', t: '🎆', n: 'FIREWORKS', cd: 2, fn: h => {
+        const foes = aliveList().filter(q => q !== h).sort(() => Math.random() - .5).slice(0, 5);
+        foes.forEach((v, i) => setTimeout(() => { if (!v.alive) return; const hue = ri(0, 359); spark(v.x, v.y, 'hsl(' + hue + ',100%,68%)', 26, 270, 1.1); ring(v.x, v.y, 'hsl(' + hue + ',100%,70%)', 70, .5, 3); sfx.gift(2); if (v.shield <= 0) hurt(v, (7 + v.points * .03) * mult(h), h, 'zap'); }, i * 150));
+        h.points += 8; h.pulse = 2; } },
+      { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: h => { h.shield = Math.max(h.shield, 5); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
     ];
     // small gifts also trigger these same actions, for whichever viewer sent the gift
     const giftCds = {};
-    const GIFT_ACT = { 1: 'drop', 5: 'triple', 20: 'mega', 30: 'rain', 50: 'sh', 100: 'lucky' };
-    const GIFT_LABEL = { drop: ['🌹', 'Rose', 1], triple: ['🫰', 'Finger Heart', 5], mega: ['🧴', 'Perfume', 20], rain: ['🍩', 'Doughnut', 30], sh: ['🎁', '50-coin gift', 50], lucky: ['🫶', 'Hand Hearts', 100] };
+    const GIFT_ACT = { 1: 'strike', 5: 'sh', 20: 'storm', 30: 'fw', 50: 'dbl', 100: 'rev' };
+    const GIFT_LABEL = { strike: ['🌹', 'Rose', 1], sh: ['🫰', 'Finger Heart', 5], storm: ['🧴', 'Perfume', 20], fw: ['🍩', 'Doughnut', 30], dbl: ['🎁', '50-coin gift', 50], rev: ['🫶', 'Hand Hearts', 100] };
     window.__studioGiftAction = (p, coins) => {
       const key = GIFT_ACT[coins]; if (!key) return;
       const a = ACTS.find(x => x.k === key); if (!a) return;
@@ -1870,8 +1766,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   window.TapArena.audio = () => (ac ? ac.state : 'none');
   window.TapArena.stats = () => ({ real: realCount(), fillers: fillers().length });
   window.TapArena.dump = () => aliveList().map(p => ({ n: p.name, x: p.x, y: p.y, r: p.r, pts: Math.round(p.points), bl: p.blades, dbl: !!p.permanentDbl }));
-  window.TapArena.plinko = () => ({ balls: PL.balls.length });
-  window.TapArena.drop = (name, o) => { const p = roster.get(name) || aliveList().find(q => q.name === name); return dropBall(p, Object.assign({ force: true }, o || {})); };
   window.TapArena.orbs = () => orbs.map(o => ({ x: o.x, y: o.y, k: o.fx.k }));
   window.TapArena.forceOrb = () => { orbSpawnT = 0; spawnOrb(); return orbs[orbs.length - 1]; };
   window.TapArena.kill = n => { const q = roster.get(String(n).toLowerCase()); if (q) { q.alive = false; q.diedAt = time; } };
