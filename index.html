@@ -278,6 +278,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   if (STUDIO) document.body.classList.add('studio');
   if (CHROMA && /^[0-9a-f]{3,6}$/i.test(CHROMA)) { document.documentElement.style.background = '#' + CHROMA; document.body.style.background = '#' + CHROMA; document.getElementById('game').style.background = '#' + CHROMA; }
 
+  const GLOW = !STUDIO || Q.get('glow') === '1';
   const STUDIO_PTS = 170;   // radius = baseR + 0.4*(capR-baseR), about 40% of the biggest normal bubble
   /* ---------- Config ---------- */
   const W = 540, H = 960, TAU = Math.PI * 2;
@@ -326,12 +327,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const fmt = n => n >= 10000 ? (n / 1000).toFixed(0) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n));
   const game = $('game'), cv = $('cv'), ctx = cv.getContext('2d');
+  if (!GLOW) Object.defineProperty(ctx, 'shadowBlur', { get() { return 0; }, set() {} });
   { const _arc = ctx.arc.bind(ctx); ctx.arc = (x, y, r, a, b, c) => _arc(x, y, r > 0 ? r : 0, a, b, c); }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let scale = 1;
   function resize() {
     const r = game.getBoundingClientRect();
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), 2);
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1080 / Math.max(1, r.width)), STUDIO ? (Q.get('q') === 'hi' ? 2 : Q.get('q') === 'low' ? 1 : 1.5) : 2);
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
     scale = cv.width / W;
   }
@@ -609,7 +611,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- Effects ---------- */
   function spark(x, y, color, n, speed, life) {
-    for (let i = 0; i < n && parts.length < 800; i++) {
+    for (let i = 0; i < n && parts.length < (STUDIO ? 320 : 800); i++) {
       const a = rf(0, TAU), s = rf(.25, 1) * speed;
       parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rf(.5, 1) * (life || .6), max: life || .6, color, size: rf(1.5, 3.6) });
     }
@@ -1380,8 +1382,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min(.033, (now - last) / 1000); last = now;
-    try { update(dt); draw(); } catch (err) { dbg('frame error: ' + err.message); try { ctx.setTransform(1, 0, 0, 1, 0, 0); } catch (e2) {} }
+    const raw = Math.min(STUDIO ? .075 : .033, (now - last) / 1000); last = now;
+    const steps = raw > .034 ? Math.ceil(raw / .034) : 1, dt = raw / steps;
+    try { for (let i = 0; i < steps; i++) update(dt); draw(); } catch (err) { dbg('frame error: ' + err.message); try { ctx.setTransform(1, 0, 0, 1, 0, 0); } catch (e2) {} }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
