@@ -829,7 +829,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       floater(x, y - 10, '+' + CFG.pts.share + ' 🔗', '#ffd23f', 18);
       ring(p.x, p.y, '#ffd23f', p.r + 45, .5, 3); sfx.share();
     } else if (type === 'gift') {
-      onGift(p, Math.max(1, Math.round(Number(e.value || e.coins) || 1)), e.gift);
+      const coins = Math.max(1, Math.round(Number(e.value || e.coins) || 1));
+      onGift(p, coins, e.gift);
+      if (STUDIO && window.__studioGiftAction) window.__studioGiftAction(p, coins);
     }
   }
 
@@ -1611,7 +1613,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const ACTS = [
       { k: 'dbl', t: '×2', n: 'DOUBLE', cd: 20, fn: h => { h.dbl = 12; h.glow = 12; h.shield = Math.max(h.shield, 1); banner('×2 POWER!', '12 seconds', 'big', 2.2); ring(h.x, h.y, '#ffd23f', h.r + 90, .8, 6); spark(h.x, h.y, '#ffd23f', 34, 300, .9); sfx.gift(3); } },
       { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: h => { h.lightning++; if (!zap(h, aliveList())) h.lightning--; } },
-      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: h => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); for (let i = 0; i < 7; i++) setTimeout(() => { const q = hostP(); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
+      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: h => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); const key = h.key; for (let i = 0; i < 7; i++) setTimeout(() => { const q = roster.get(key); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
       { k: 'rev', t: '🔥', n: 'REVENGE', cd: 7, fn: h => {
         let t = h.lastAtk && h.lastAtk.alive && h.lastAtk !== h ? h.lastAtk : aliveList().filter(q => q !== h).sort((a, b) => b.points - a.points)[0];
         if (!t) return; banner('🔥 REVENGE!', t.name, 'big', 2.4); ring(h.x, h.y, '#ff5c2a', h.r + 80, .7, 6); shake(5);
@@ -1624,6 +1626,16 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         h.points += 8; h.pulse = 2; } },
       { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: h => { h.shield = Math.max(h.shield, 5); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
     ];
+    // small gifts also trigger these same actions, for whichever viewer sent the gift
+    const giftCds = {};
+    const GIFT_ACT = { 1: 'strike', 20: 'storm', 30: 'fw' };
+    window.__studioGiftAction = (p, coins) => {
+      const key = GIFT_ACT[coins]; if (!key) return;
+      const a = ACTS.find(x => x.k === key); if (!a) return;
+      const now = performance.now() / 1000, ck = key + ':' + p.key;
+      if ((giftCds[ck] || 0) > now) return;
+      giftCds[ck] = now + a.cd; a.fn(p);
+    };
     const bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;left:0;right:0;bottom:6px;z-index:90;display:flex;justify-content:center;gap:6px;pointer-events:auto';
     ACTS.forEach((a, i) => {
