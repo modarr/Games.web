@@ -1522,9 +1522,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const take = Math.max(1, v.points * pct);
     v.points = Math.max(0, v.points - take);
     addPoints(a, take);
-    floater(v.x, v.y - v.r, '-' + Math.round(pct * 100) + '%', '#ff5a7a', 18);
-    floater(a.x, a.y - a.r, '+' + Math.round(pct * 100) + '%', '#ffd23f', 18);
-    ring(v.x, v.y, '#ff5a7a', v.r + 40, .45, 3);
+    if (pct >= 0.1) ring(v.x, v.y, '#ff5a7a', v.r + 40, .45, 3);
     if (v.points < 8) kill(v, a);
   }
   function kill(v, a) {
