@@ -559,7 +559,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     shield: 2.2, hitCd: 0.16,
     dmgBase: 1.5, dmgPerBlade: 1.2, dmgPct: 0.012, steal: 0.35, killBonus: 6,
     bigGift: 100,                                    // coins needed for a spoken shout-out
-    roundSecs: 240, roundGap: 20, roundSecsStudio: 180, idleSecs: +(Q.get('idle') || 90), idleRoundReset: 45                     // 4-minute rounds with a 20s break between
+    roundSecs: 240, roundGap: 20, roundSecsStudio: 180, idleSecs: +(Q.get('idle') || 60), idleRoundReset: 45                     // 4-minute rounds with a 20s break between
   };
   // Approximate current coin prices (they change; the game only uses the coin value it receives)
   const GIFTS = [
@@ -2184,10 +2184,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       try { giftPop(p, coins + ' coins'); } catch (e) {}
     };
     const bar = document.createElement('div');
-    bar.style.cssText = 'position:absolute;left:calc(var(--u)*1.5);top:calc(var(--u)*40);width:calc(var(--u)*21);margin-top:calc(var(--u)*1.2);z-index:25;display:flex;flex-direction:column;gap:calc(var(--u)*.9);box-sizing:border-box;pointer-events:none';
+    bar.style.cssText = 'position:absolute;left:calc(var(--u)*1.5);top:calc(var(--u)*40);width:max-content;margin-top:calc(var(--u)*1.2);z-index:25;display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*.6);box-sizing:border-box;pointer-events:none';
     ACTS.forEach((a, i) => {
       const b = document.createElement('button');
-      b.style.cssText = 'width:100%;min-width:0;pointer-events:auto;font:700 calc(var(--u)*3.2) system-ui;color:#fff;background:rgba(20,10,50,.85);border:calc(var(--u)*.4) solid #35e0ff;border-radius:calc(var(--u)*1.6);padding:calc(var(--u)*.9) 0;cursor:pointer;line-height:1.15';
+      b.style.cssText = 'width:max-content;pointer-events:auto;font:700 calc(var(--u)*2.6) system-ui;color:#fff;background:rgba(20,10,50,.85);border:calc(var(--u)*.3) solid #35e0ff;border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*.4) calc(var(--u)*1.2);cursor:pointer;line-height:1.1;text-align:center';
       const gl = GIFT_LABEL[a.k];
       b.innerHTML = a.t + '<div style="font-size:.46em;opacity:.9">' + a.n + '</div><div style="font-size:.5em;margin-top:.2em;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '+🪙</div>';
       const fire = () => {
