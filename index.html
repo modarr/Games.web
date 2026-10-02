@@ -460,7 +460,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     <p class="note">Gift power is based on the coin value in the event, not the gift name. Prices in the buttons are approximate and TikTok changes them. You can also tap any bubble to give it a point.</p>
   </div>
 
-  <div id="overlay" style="display:none">
+  <div id="overlay">
     <div class="emo">🫧⚔️💣</div>
     <h1>BLADE<br>BUBBLES</h1>
     <div class="rules">
@@ -538,7 +538,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const TEST = MODE === 'test';
   const STUDIO = MODE === 'studio';
   const OVERLAY = TEST ? Q.get('overlay') === '1' : Q.get('overlay') !== '0';
-  const DEMO = Q.get('demo') !== '0';
+  const DEMO = TEST ? Q.get('demo') !== '0' : Q.get('demo') === '1';
   const LEGEND = false;   // side menu removed: arena uses the full screen
   const CHROMA = Q.get('chroma');
   const DEBUG = Q.get('debug') === '1';
@@ -787,7 +787,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       step++;
     }, 280);
   }
-  window.__shipMode = false;
+  window.__shipMode = true;
   window.__setShipMode = on => {
     window.__shipMode = !!on;
     spaceWarMusic(window.__shipMode);
@@ -2205,12 +2205,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.beginPath(); ctx.moveTo(r * .2, -r * .42); ctx.lineTo(r * 1.35, -r * .42); ctx.moveTo(r * .2, r * .42); ctx.lineTo(r * 1.35, r * .42); ctx.stroke();
       ctx.fillStyle = blink ? '#ff3b3b' : '#ffd23f';
       ctx.beginPath(); ctx.arc(r * 1.35, -r * .42, Math.max(2.6, r * .12), 0, TAU); ctx.arc(r * 1.35, r * .42, Math.max(2.6, r * .12), 0, TAU); ctx.fill();
-      if (p.muzzle > 0) {
-        ctx.globalAlpha = p.muzzle / .12;
-        ctx.fillStyle = '#fff6c2';
-        ctx.beginPath(); ctx.arc(r * 1.55, -r * .42, r * .22, 0, TAU); ctx.arc(r * 1.55, r * .42, r * .22, 0, TAU); ctx.fill();
-        ctx.globalAlpha = 1;
-      }
       const hp = Math.max(0, Math.min(1, p.points / 180));
       ctx.save(); ctx.rotate(-(p.aim || 0));
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(-r, r + 8, r * 2, 4);
@@ -2415,19 +2409,16 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function updateShots(dt) {
     if (!window.__shipMode) { shots.length = 0; return; }
     for (const p of aliveList()) {
-      if (p.muzzle > 0) p.muzzle = Math.max(0, p.muzzle - dt);
-      if (p.recoil > 0) p.recoil = Math.max(0, p.recoil - dt * 4);
       p.shotCd = (p.shotCd || 0) - dt;
       if (p.shotCd > 0) continue;
       const back = p.lastAtk && p.lastAtk.alive && p.lastAtk !== p ? p.lastAtk : null;
       const t = back || nearestEnemy(p, aliveList(), 460); if (!t) continue;
       p.shotCd = .45;
       const a = Math.atan2(t.y - p.y, t.x - p.x);
-      p.aim = a; p.muzzle = .12; p.recoil = 1;
+      p.aim = a;
       const cs = Math.cos(a), sn = Math.sin(a);
-      p.vx -= cs * 70; p.vy -= sn * 70;
       [-0.42, 0.42].forEach(off => {
-        shots.push({ x: p.x + cs * p.r * 1.35 - sn * p.r * off, y: p.y + sn * p.r * 1.35 + cs * p.r * off, vx: cs * 420, vy: sn * 420, life: .7, owner: p, col: '#ffd23f' });
+        shots.push({ x: p.x + cs * p.r * 1.35 - sn * p.r * off, y: p.y + sn * p.r * 1.35 + cs * p.r * off, vx: cs * 320, vy: sn * 320, life: .65, owner: p, col: '#ffd23f' });
       });
     }
     for (let i = shots.length - 1; i >= 0; i--) {
@@ -2921,15 +2912,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   } else {
     $('panel').remove(); $('gear').remove();
   }
-  $('overlay').style.display = 'none';
-  try { initAudio(); } catch (e) {}
-  setTimeout(intro, 400);
-  const sw = document.createElement('button');
-  sw.textContent = 'STAR WAR';
-  sw.style.cssText = 'position:absolute;right:12px;bottom:12px;z-index:80;font:800 14px system-ui;color:#07140f;background:#8be7ff;border:0;border-radius:12px;padding:10px 14px;cursor:pointer';
-  sw.onclick = () => { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); };
-  document.getElementById('game').appendChild(sw);
-  window.addEventListener('error', ev => { const b = document.createElement('div'); b.textContent = 'Error: ' + ev.message; b.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:99;background:#3a1020;color:#fff;padding:10px;border-radius:10px'; document.body.appendChild(b); });
+  if (OVERLAY) { $('overlay').style.display = 'none'; try { initAudio(); } catch (e) {} setTimeout(intro, 1500); }
 })();
 
 </script>
