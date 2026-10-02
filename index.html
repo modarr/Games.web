@@ -572,6 +572,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
 
   const ARENA = { x0: 14, y0: 236, x1: W - 14, y1: H - 24 };   // top kept clear of the leaderboards + action buttons strip
+  const ARENA_BASE = { x0: ARENA.x0, y0: ARENA.y0, x1: ARENA.x1, y1: ARENA.y1 };   // un-shrunk arena (shrink events inset ARENA from this)
   const CFG = {
     maxPlayers: 80,
     startPoints: 10,
@@ -1181,6 +1182,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function fwVidStop() { const v = $('winfw'); clearInterval(fwFadeT); if (v) { try { v.pause(); } catch (e) {} } }
   function endRound() {
+    shrinkStop(true);
     const al = aliveList().sort((a, b) => b.points - a.points);
     round.phase = 'gap'; round.t = CFG.roundGap; round.reset = false; round.cdn = 0;
     const winMs = Math.min(8000, Math.max(2500, (CFG.roundGap - 6) * 1000));
@@ -1217,6 +1219,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
   }
   function startRound() {
+    shrinkStop(true);
     if (!round.reset) { round.reset = true; resetBoard(); }
     round.num++; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
     showCard('ROUND ' + round.num, 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
@@ -1631,6 +1634,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   let purgeT = 3; let crowd = 0;
   function update(dt) {
     time += dt;
+    shrinkStep(dt);
     roundTick(dt);
     purgeT -= dt; if (purgeT <= 0) { purgeT = 3; purgeIdle(CFG.idleSecs); }
     if (STUDIO) updateFood(dt);   // random power-up orbs removed
@@ -1816,6 +1820,69 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function topByScore(n) { return players.filter(q => q.alive).sort((a, b) => scoreOf(b) - scoreOf(a))[n - 1] || null; }
   function topByGift(n) { return players.filter(q => q.alive && (q.giftedTotal || 0) > 0).sort((a, b) => (b.giftedTotal || 0) - (a.giftedTotal || 0))[n - 1] || null; }
+
+  /* ---------- Shrinking arena (host command #99 / "shrink"; toggles) ---------- */
+  const SHRINK = { warn: 3, close: 18, hold: 8, open: 3.5, final: .5 };   // seconds; final = fraction of arena left
+  const shrink = { phase: 'off', t: 0, k: 0, k0: 0 };
+  function applyArena() {
+    const bw = ARENA_BASE.x1 - ARENA_BASE.x0, bh = ARENA_BASE.y1 - ARENA_BASE.y0;
+    const ix = (1 - SHRINK.final) / 2 * bw * shrink.k, iy = (1 - SHRINK.final) / 2 * bh * shrink.k;
+    ARENA.x0 = ARENA_BASE.x0 + ix; ARENA.x1 = ARENA_BASE.x1 - ix;
+    ARENA.y0 = ARENA_BASE.y0 + iy; ARENA.y1 = ARENA_BASE.y1 - iy;
+  }
+  function shrinkStop(instant) {
+    if (shrink.phase === 'off') return;
+    if (instant) { shrink.phase = 'off'; shrink.k = 0; applyArena(); return; }
+    shrink.phase = 'open'; shrink.t = 0; shrink.k0 = shrink.k;
+  }
+  function shrinkStep(dt) {
+    if (shrink.phase === 'off') return;
+    shrink.t += dt;
+    const sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+    if (shrink.phase === 'warn') { shrink.k = 0; if (shrink.t >= SHRINK.warn) { shrink.phase = 'close'; shrink.t = 0; sfx.siren(); } }
+    else if (shrink.phase === 'close') { shrink.k = sm(shrink.t / SHRINK.close); if (shrink.t >= SHRINK.close) { shrink.phase = 'hold'; shrink.t = 0; shrink.k = 1; } }
+    else if (shrink.phase === 'hold') { shrink.k = 1; if (shrink.t >= SHRINK.hold) { shrink.phase = 'open'; shrink.t = 0; shrink.k0 = 1; } }
+    else if (shrink.phase === 'open') { shrink.k = shrink.k0 * (1 - sm(shrink.t / SHRINK.open)); if (shrink.t >= SHRINK.open) { shrink.phase = 'off'; shrink.k = 0; } }
+    applyArena();
+    // keep pickups and orbs inside the shrinking walls
+    for (const f of foods) { f.x = clamp(f.x, ARENA.x0 + 20, ARENA.x1 - 20); f.y = clamp(f.y, ARENA.y0 + 20, ARENA.y1 - 20); }
+    for (const o of orbs) { o.x = clamp(o.x, ARENA.x0 + 24, ARENA.x1 - 24); o.y = clamp(o.y, ARENA.y0 + 40, ARENA.y1 - 40); }
+  }
+  window.__fxShrink = () => {
+    if (shrink.phase === 'off') { shrink.phase = 'warn'; shrink.t = 0; shrink.k = 0; sfx.siren(); shake(3); return 'start'; }
+    if (shrink.phase !== 'open') { shrinkStop(false); return 'end'; }
+    return 'busy';
+  };
+  window.__fxShrinkState = () => ({ phase: shrink.phase, t: +shrink.t.toFixed(2), k: +shrink.k.toFixed(3), x0: Math.round(ARENA.x0), x1: Math.round(ARENA.x1), y0: Math.round(ARENA.y0), y1: Math.round(ARENA.y1) });
+  function shrinkDraw() {
+    if (shrink.phase === 'off') return;
+    const pulse = .5 + .5 * Math.sin(time * 11), blink = Math.sin(time * 11) > 0;
+    const rr = (a) => { if (ctx.roundRect) ctx.roundRect(a.x0, a.y0, a.x1 - a.x0, a.y1 - a.y0, 26); else ctx.rect(a.x0, a.y0, a.x1 - a.x0, a.y1 - a.y0); };
+    ctx.save();
+    if (shrink.k > .002) {   // red danger zone between the original edge and the moving wall
+      ctx.beginPath(); rr(ARENA_BASE); rr(ARENA);
+      ctx.fillStyle = 'rgba(255,30,40,' + (.12 + .10 * pulse) + ')'; ctx.fill('evenodd');
+    }
+    const edge = (a, w) => {   // blinking red siren edge with soft glow
+      for (const [lw, al] of [[16, .06], [9, .12], [w, .25 + .75 * pulse]]) {
+        ctx.beginPath(); rr(a); ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(255,40,50,' + (al * (lw === w ? 1 : .4 + .6 * pulse)) + ')';
+        if (lw === w) { ctx.shadowColor = '#ff2030'; ctx.shadowBlur = 8 + 18 * pulse; } else ctx.shadowBlur = 0;
+        ctx.stroke();
+      }
+    };
+    edge(ARENA_BASE, 4);
+    if (shrink.k > .002) edge(ARENA, 4);
+    ctx.shadowBlur = 0;
+    // alert text lives in the thin strip BELOW the arena so it never covers play
+    const label = shrink.phase === 'hold' ? '⚠ ARENA LOCKED · ' + Math.max(0, Math.ceil(SHRINK.hold - shrink.t)) + 's ⚠'
+      : shrink.phase === 'open' ? 'ARENA REOPENING' : '⚠ ALERT · ARENA SHRINKING ⚠';
+    ctx.font = '900 16px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ty = (ARENA_BASE.y1 + H) / 2 + 1;
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.9)'; ctx.strokeText(label, W / 2, ty);
+    ctx.fillStyle = shrink.phase === 'open' ? '#fff' : (blink ? '#ff3b3b' : '#ffffff'); ctx.fillText(label, W / 2, ty);
+    ctx.restore();
+  }
+
   /* ---------- Host chat commands: shout-outs + point gifts (must live in this scope) ---------- */
   function findPlayerByName(word) {
     if (!word) return null;
@@ -1985,6 +2052,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0, 28); else ctx.rect(ARENA.x0, ARENA.y0, ARENA.x1 - ARENA.x0, ARENA.y1 - ARENA.y0);
     ctx.stroke(); ctx.restore();
+    shrinkDraw();
 
     if (STUDIO) drawFoods();
 
@@ -2405,7 +2473,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         const a = lbEl.getBoundingClientRect(), b2 = gbEl.getBoundingClientRect(), u = g.width / 100;
         bar.style.top = (Math.max(a.bottom, b2.bottom) - g.top + u * .3) + 'px';
         const bb = bar.getBoundingClientRect();
-        ARENA.y0 = Math.round((bb.bottom - g.top) * (W / g.width)) + 2;
+        ARENA_BASE.y0 = Math.round((bb.bottom - g.top) * (W / g.width)) + 2; applyArena();
       } catch (e) {}
     };
     placeBar(); setInterval(placeBar, 400); window.addEventListener('resize', placeBar);
@@ -2952,6 +3020,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (zero) { fxAutoToggle(zero[1].length); return; }
     const hash = txt.match(/#\s*([1-6])\b/);
     if (hash) { if (window.__fxAction) window.__fxAction(Number(hash[1]), who && who.key !== 'chillax' ? who : null); return; }
+    if (/^\s*(#\s*99|#?\s*shrink)\s*$/i.test(txt)) { if (window.__fxShrink) window.__fxShrink(); return; }
     const sor = txt.match(/#?\s*shoutout\s*(1{1,2}|2{1,2}|3{1,2})\b\s*(.*)/i);
     if (sor) { const d = sor[1]; window.__fxShout(d.length === 2 ? 'gift' : 'score', Number(d[0]), sor[2]); return; }
     const so = txt.match(/#?\s*shoutout\s+(\S+)\s*(.*)/i);
