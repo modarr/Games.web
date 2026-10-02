@@ -244,7 +244,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     position: absolute; left: 50%; bottom: 15%; width: min(140vw, 1100px); z-index: 5;
     transform: translate(-50%, 7%) scale(1.1); opacity: 0;
     transition: transform 3s cubic-bezier(.15,.8,.2,1), opacity 1.4s ease;
-    filter: drop-shadow(0 0 20px rgba(110,200,255,.85)) drop-shadow(0 0 5px rgba(215,240,255,.9));
+    filter: drop-shadow(0 0 20px rgba(var(--cr,110,200,255),.85)) drop-shadow(0 0 5px rgba(var(--lt,215,240,255),.9));
   }
   .pride-wrap.in { transform: translate(-50%, 0) scale(1); opacity: .9; }
   .pride-wrap.out { transform: translate(-50%, -3%) scale(1.05); opacity: 0; transition: transform 1.3s ease-in, opacity 1.1s ease-in; }
@@ -252,29 +252,29 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     -webkit-mask-image: radial-gradient(ellipse 72% 82% at 50% 55%, #000 55%, transparent 100%);
             mask-image: radial-gradient(ellipse 72% 82% at 50% 55%, #000 55%, transparent 100%); }
   .pride-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-  .pride-dim { position: absolute; inset: 0; opacity: 0; animation: prideDim 8.4s ease forwards;
-    background: radial-gradient(ellipse at 50% 65%, rgba(20,60,120,.04), rgba(0,12,45,.5)); }
+  .pride-dim { position: absolute; inset: 0; opacity: 0; animation: prideDim var(--T,8.4s) ease forwards;
+    background: radial-gradient(ellipse at 50% 65%, rgba(var(--cr,20,60,120),.07), rgba(var(--dk,0,12,45),.58)); }
   @keyframes prideDim { 0% { opacity: 0 } 14% { opacity: 1 } 84% { opacity: 1 } 100% { opacity: 0 } }
   .pride-glow { position: absolute; left: 50%; bottom: 2%; width: min(180vw, 1300px); aspect-ratio: 1.3; transform: translateX(-50%);
-    background: radial-gradient(ellipse at 50% 62%, rgba(150,220,255,.8), rgba(70,140,255,.28) 42%, transparent 72%);
-    mix-blend-mode: screen; opacity: 0; animation: prideGlow 8.4s ease-in-out forwards; }
+    background: radial-gradient(ellipse at 50% 62%, rgba(var(--lt,150,220,255),.85), rgba(var(--cr,70,140,255),.34) 42%, transparent 72%);
+    mix-blend-mode: screen; opacity: 0; animation: prideGlow var(--T,8.4s) ease-in-out forwards; }
   @keyframes prideGlow { 0% { opacity: 0 } 16% { opacity: 1 } 45% { opacity: .65 } 70% { opacity: 1 } 100% { opacity: 0 } }
   .pride-rays { position: absolute; left: 50%; bottom: 22%; width: min(210vw, 1500px); aspect-ratio: 1; margin-left: calc(min(210vw, 1500px) / -2);
     margin-bottom: calc(min(210vw, 1500px) / -2); border-radius: 50%; mix-blend-mode: screen; opacity: 0;
-    background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(190,235,255,.42) 0deg 7deg, transparent 7deg 26deg);
+    background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(var(--lt,190,235,255),.46) 0deg var(--rw,7deg), transparent var(--rw,7deg) var(--rp,26deg));
     -webkit-mask-image: radial-gradient(circle, #000 0, transparent 62%); mask-image: radial-gradient(circle, #000 0, transparent 62%);
-    animation: prideRays 8.4s linear forwards; }
-  @keyframes prideRays { 0% { opacity: 0; transform: rotate(0deg) } 15% { opacity: 1 } 85% { opacity: 1 } 100% { opacity: 0; transform: rotate(40deg) } }
+    animation: prideRays var(--T,8.4s) linear forwards; }
+  @keyframes prideRays { 0% { opacity: 0; transform: rotate(0deg) } 15% { opacity: 1 } 85% { opacity: 1 } 100% { opacity: 0; transform: rotate(var(--rd,40deg)) } }
   .pride-bar { position: absolute; left: 0; right: 0; height: 8%; background: #000; }
-  .pride-bar.t { top: 0; animation: prideBarT 8.4s ease forwards; }
-  .pride-bar.b { bottom: 0; animation: prideBarB 8.4s ease forwards; }
+  .pride-bar.t { top: 0; animation: prideBarT var(--T,8.4s) ease forwards; }
+  .pride-bar.b { bottom: 0; animation: prideBarB var(--T,8.4s) ease forwards; }
   @keyframes prideBarT { 0% { transform: translateY(-100%) } 9% { transform: none } 90% { transform: none } 100% { transform: translateY(-100%) } }
   @keyframes prideBarB { 0% { transform: translateY(100%) } 9% { transform: none } 90% { transform: none } 100% { transform: translateY(100%) } }
   .pride-title { position: absolute; left: 0; right: 0; top: 20%; text-align: center; opacity: 0;
     font: 900 clamp(34px, 11vw, 86px)/1 Georgia, 'Times New Roman', serif; letter-spacing: .18em; padding-left: .18em;
-    background: linear-gradient(180deg, #ffffff, #bfe8ff 48%, #3d9bff); -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 0 14px rgba(90,190,255,.95)); animation: prideTitle 6.8s ease forwards; animation-delay: .9s; }
-  .pride-title small { display: block; margin-top: 10px; font: 600 clamp(12px, 3.4vw, 22px)/1 system-ui; letter-spacing: .5em; color: #dff3ff; -webkit-text-fill-color: #dff3ff; }
+    background: linear-gradient(180deg, #ffffff, rgb(var(--lt,191,232,255)) 48%, rgb(var(--cr,61,155,255))); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 14px rgba(var(--cr,90,190,255),.95)); animation: prideTitle var(--TT,6.8s) ease forwards; animation-delay: .9s; }
+  .pride-title small { display: block; margin-top: 10px; font: 600 clamp(12px, 3.4vw, 22px)/1 system-ui; letter-spacing: .5em; color: rgb(var(--lt,223,243,255)); -webkit-text-fill-color: rgb(var(--lt,223,243,255)); }
   @keyframes prideTitle { 0% { opacity: 0; transform: scale(1.3); letter-spacing: .5em } 18% { opacity: 1; transform: scale(1); letter-spacing: .18em } 80% { opacity: 1 } 100% { opacity: 0; transform: scale(.97) } }
     .pride-wrap.pw-full canvas { -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
     -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent); mask-composite: intersect; }
@@ -289,7 +289,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   #joinToasts .jt img { width: calc(var(--u)*5); height: calc(var(--u)*5); border-radius: 50%; object-fit: cover; }
   #joinToasts .jt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @keyframes jt { 0% { opacity: 0; transform: translateX(calc(var(--u)*4)) } 8% { opacity: .85; transform: none } 80% { opacity: .85 } 100% { opacity: 0 } }
-.pride-star { position: absolute; color: #eaf7ff; text-shadow: 0 0 10px #5cc0ff, 0 0 22px #7aa4ff; opacity: 0; animation: prideStar var(--d, 2.4s) ease-out forwards; }
+.pride-star { position: absolute; color: rgb(var(--lt,234,247,255)); text-shadow: 0 0 10px rgb(var(--cr,92,192,255)), 0 0 22px rgba(var(--cr,122,164,255),.8); opacity: 0; animation: prideStar var(--d, 2.4s) ease-out forwards; }
   @keyframes prideStar { 0% { opacity: 0; transform: translateY(0) scale(.3) rotate(0) } 25% { opacity: 1 } 100% { opacity: 0; transform: translateY(-120px) scale(1.2) rotate(120deg) } }
 
   /* ===== Gift FX layer (rose / lion roar / queen / lion video) ===== */
@@ -2388,22 +2388,22 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     layer.appendChild(wrap);
     wrap.style.transition = 'none'; wrap.style.transform = `translateX(${-w - 20}px)`;
     void wrap.offsetWidth;
-    wrap.style.transition = 'transform 1.1s cubic-bezier(.3,.6,.5,1)';
+    wrap.style.transition = 'transform 1.6s cubic-bezier(.3,.6,.5,1)';
     wrap.style.transform = `translateX(${(W - w) / 2}px)`;
-    for (let i = 0; i < 5; i++) tone(70, i * 0.22, 0.14, 'sine', 0.3);
+    for (let i = 0; i < 7; i++) tone(70, i * 0.23, 0.14, 'sine', 0.3);
     setTimeout(() => {
       wrap.classList.remove('walking'); wrap.classList.add('roaring');
       const lr = layer.getBoundingClientRect(), r = wrap.querySelector('.lion-svg').getBoundingClientRect();
       const mx = r.left - lr.left + r.width * 229 / 320, my = r.top - lr.top + r.height * 106 / 190;
-      playRoarSound(); shakeScreen(800); screenFlash(); showBurst('🦁 ROOOAR! 🦁');
+      playRoarSound(); shakeScreen(1100); screenFlash(); showBurst('🦁 ROOOAR! 🦁');
       shockRing(mx, my, '#ffb300', 0); shockRing(mx, my, '#ff6d00', 200); shockRing(mx, my, '#ffd600', 400);
       sparks(mx, my, 36, 200);
-    }, 1150);
+    }, 1650);
     setTimeout(() => {
       wrap.classList.remove('roaring'); wrap.classList.add('walking');
-      wrap.style.transition = 'transform 1s ease-in'; wrap.style.transform = `translateX(${W + 40}px)`;
-    }, 1950);
-    setTimeout(() => wrap.remove(), 3000);
+      wrap.style.transition = 'transform 1.6s ease-in'; wrap.style.transform = `translateX(${W + 40}px)`;
+    }, 3300);
+    setTimeout(() => wrap.remove(), 5000);
   }
 
   function queenSVG() {
@@ -2447,7 +2447,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     layer.appendChild(wrap); void wrap.offsetWidth; wrap.classList.add('in');
     [523, 659, 784].forEach((f, i) => tone(f, i * 0.16, 0.35, 'triangle', 0.22));
     tone(1047, 0.5, 0.8, 'triangle', 0.24); tone(784, 0.5, 0.8, 'triangle', 0.16);
-    setTimeout(() => { tone(180, 0, 0.25, 'sine', 0.35); sparks(W / 2, H * 0.3, 24, 200); }, 500);
+    setTimeout(() => { tone(180, 0, 0.25, 'sine', 0.35); sparks(W / 2, H * 0.3, 24, 200); }, 800);
     setTimeout(() => {
       const cx = W / 2, cy = H / 2;
       screenFlash(); shakeScreen(700); showBurst('👑 QUEEN 👑');
@@ -2455,15 +2455,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       sparks(cx, cy, 36, 280);
       [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, i * 0.05, 0.9, 'triangle', 0.2));
       tone(130, 0, 0.6, 'sawtooth', 0.18);
-    }, 800);
-    setTimeout(() => sparks(W * 0.25, H * 0.4, 28, 160), 1400);
-    setTimeout(() => sparks(W * 0.75, H * 0.5, 28, 160), 1900);
-    setTimeout(() => wrap.classList.add('out'), 2300);
-    setTimeout(() => wrap.remove(), 3000);
+    }, 1250);
+    setTimeout(() => sparks(W * 0.25, H * 0.4, 28, 160), 2000);
+    setTimeout(() => sparks(W * 0.75, H * 0.5, 28, 160), 2700);
+    setTimeout(() => wrap.classList.add('out'), 4200);
+    setTimeout(() => wrap.remove(), 5000);
   }
 
   /* ---- real video: lion pride, green screen keyed to transparent ---- */
-  const CLIPS = {"pride": {"el": "prideFrames", "w": 280, "h": 129, "fps": 11.11, "n": 30, "loop": false, "mode": "key", "title": "THE PRIDE", "sub": "✦ ROYAL ARRIVAL ✦", "rt": 1.0, "width": "min(140vw,1100px)", "bottom": "15%", "fade": true, "max": 3}, "pirate": {"el": "fr_pirate", "w": 260, "h": 153, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "PIRATES", "sub": "✦ HOIST THE FLAG ✦", "rt": 1.0, "width": "min(125vw,980px)", "bottom": "15%", "fade": false, "max": 3}, "butterfly": {"el": "fr_butterfly", "w": 178, "h": 190, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "BUTTERFLY", "sub": "✦ SO PRETTY ✦", "rt": 1.5, "width": "min(90vw,520px)", "bottom": "15%", "fade": false, "max": 3}, "canada": {"el": "fr_canada", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "CANADA", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "kuwait": {"el": "fr_kuwait", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "KUWAIT", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "saudi": {"el": "fr_saudi", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "SAUDI ARABIA", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "qatar": {"el": "fr_qatar", "w": 240, "h": 134, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "QATAR", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "israel": {"el": "fr_israel", "w": 240, "h": 134, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "ISRAEL", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "palestine": {"el": "fr_palestine", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "PALESTINE", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 3}, "heli": {"el": "fr_heli", "w": 260, "h": 190, "fps": 8.89, "n": 24, "loop": false, "mode": "key", "title": "HELICOPTER", "sub": "✦ INCOMING ✦", "rt": 0.85, "width": "min(125vw,980px)", "bottom": "15%", "fade": false, "max": 3}, "dragon": {"el": "fr_dragon", "w": 270, "h": 176, "fps": 8.89, "n": 24, "loop": false, "mode": "key", "title": "DRAGON", "sub": "✦ BEWARE ✦", "rt": 0.75, "width": "min(140vw,1100px)", "bottom": "15%", "fade": false, "max": 3}, "dragonfire": {"el": "fr_dragonfire", "w": 210, "h": 250, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "DRAGON FIRE", "sub": "✦ BURN ✦", "rt": 0.75, "width": "min(90vw,520px)", "bottom": "15%", "fade": false, "max": 3}, "galaxy": {"el": "fr_galaxy", "w": 220, "h": 124, "fps": 5, "n": 20, "loop": true, "mode": "galaxy", "title": "GALAXY", "sub": "✦ INTO THE VOID ✦", "rt": 0.9, "width": "min(130vw,1000px)", "bottom": "28%", "fade": false, "max": 3}, "lionrun": {"el": "fr_lionrun", "w": 270, "h": 118, "fps": 8, "n": 24, "loop": true, "mode": "key", "title": "LION RUN", "sub": "✦ KING OF THE JUNGLE ✦", "rt": 1.0, "width": "min(140vw,1100px)", "bottom": "15%", "fade": false, "max": 3}};
+  const CLIPS = {"pride": {"el": "prideFrames", "w": 280, "h": 129, "fps": 6.67, "n": 30, "loop": false, "mode": "key", "title": "THE PRIDE", "sub": "✦ ROYAL ARRIVAL ✦", "rt": 1.0, "width": "min(140vw,1100px)", "bottom": "15%", "fade": true, "max": 5, "col": "#ffe04a", "rp": 26, "rd": "40deg", "glyph": "✦✧"}, "pirate": {"el": "fr_pirate", "w": 260, "h": 153, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "PIRATES", "sub": "✦ HOIST THE FLAG ✦", "rt": 1.0, "width": "min(125vw,980px)", "bottom": "15%", "fade": false, "max": 5, "col": "#9b5cff", "rp": 18, "rd": "-60deg", "glyph": "✦☠⚓"}, "butterfly": {"el": "fr_butterfly", "w": 178, "h": 190, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "BUTTERFLY", "sub": "✦ SO PRETTY ✦", "rt": 1.5, "width": "min(90vw,520px)", "bottom": "15%", "fade": false, "max": 5, "col": "#ff7ad9", "rp": 36, "rd": "50deg", "glyph": "✿❀✦"}, "canada": {"el": "fr_canada", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "CANADA", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#ff2d2d", "rp": 22, "rd": "40deg", "glyph": "★✦"}, "kuwait": {"el": "fr_kuwait", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "KUWAIT", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#19d46a", "rp": 30, "rd": "-40deg", "glyph": "★✧"}, "saudi": {"el": "fr_saudi", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "SAUDI ARABIA", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#19f0c8", "rp": 20, "rd": "55deg", "glyph": "✦★"}, "qatar": {"el": "fr_qatar", "w": 240, "h": 134, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "QATAR", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#d6246e", "rp": 28, "rd": "-50deg", "glyph": "✦✧"}, "israel": {"el": "fr_israel", "w": 240, "h": 134, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "ISRAEL", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#3d8bff", "rp": 24, "rd": "45deg", "glyph": "✦✧"}, "palestine": {"el": "fr_palestine", "w": 240, "h": 135, "fps": 5, "n": 20, "loop": true, "mode": "full", "title": "PALESTINE", "sub": "✦ FLAG SALUTE ✦", "rt": 1.25, "width": "min(120vw,950px)", "bottom": "28%", "fade": false, "max": 5, "col": "#e8f0ff", "rp": 34, "rd": "-35deg", "glyph": "✦✧★"}, "heli": {"el": "fr_heli", "w": 260, "h": 190, "fps": 5.33, "n": 24, "loop": false, "mode": "key", "title": "HELICOPTER", "sub": "✦ INCOMING ✦", "rt": 0.85, "width": "min(125vw,980px)", "bottom": "15%", "fade": false, "max": 5, "col": "#36d6ff", "rp": 16, "rd": "70deg", "glyph": "✦·"}, "dragon": {"el": "fr_dragon", "w": 270, "h": 176, "fps": 5.33, "n": 24, "loop": false, "mode": "key", "title": "DRAGON", "sub": "✦ BEWARE ✦", "rt": 0.75, "width": "min(140vw,1100px)", "bottom": "15%", "fade": false, "max": 5, "col": "#c6ff2e", "rp": 40, "rd": "-45deg", "glyph": "✦✹"}, "dragonfire": {"el": "fr_dragonfire", "w": 210, "h": 250, "fps": 6, "n": 24, "loop": true, "mode": "key", "title": "DRAGON FIRE", "sub": "✦ BURN ✦", "rt": 0.75, "width": "min(90vw,520px)", "bottom": "15%", "fade": false, "max": 5, "col": "#ff6a1a", "rp": 14, "rd": "60deg", "glyph": "✹✺✦"}, "galaxy": {"el": "fr_galaxy", "w": 220, "h": 124, "fps": 5, "n": 20, "loop": true, "mode": "galaxy", "title": "GALAXY", "sub": "✦ INTO THE VOID ✦", "rt": 0.9, "width": "min(130vw,1000px)", "bottom": "28%", "fade": false, "max": 5, "col": "#5b6bff", "rp": 50, "rd": "30deg", "glyph": "·✦✧"}, "lionrun": {"el": "fr_lionrun", "w": 270, "h": 118, "fps": 8, "n": 24, "loop": true, "mode": "key", "title": "LION RUN", "sub": "✦ KING OF THE JUNGLE ✦", "rt": 1.0, "width": "min(140vw,1100px)", "bottom": "15%", "fade": false, "max": 5, "col": "#ffa11f", "rp": 24, "rd": "-55deg", "glyph": "✦✧"}};
   const clipImgs = {};
   function getClipImgs(id) {
     if (clipImgs[id]) return clipImgs[id];
@@ -2471,7 +2471,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     clipImgs[id] = JSON.parse(el.textContent).map(b => { const im = new Image(); im.decoding = 'sync'; im.src = 'data:image/webp;base64,' + b; return im; });
     return clipImgs[id];
   }
-  /* ---- per-effect sound design (all synthesized, each under 3s) ---- */
+  /* ---- per-effect sound design: prize / surprise themed, all synthesized, each under 5s ---- */
   let fxNb = null;
   function fxNoise(t, d, v, f1, q, f2, type) {
     const ac = getAudio(); if (!ac || ac.state !== 'running') return;
@@ -2482,38 +2482,46 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const g = ac.createGain(); g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(v, s + Math.min(0.05, d / 3)); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
     src.connect(f); f.connect(g); g.connect(ac.destination); src.start(s); src.stop(s + d + 0.03);
   }
-  const sWhoosh = () => fxNoise(0, 0.55, 0.35, 300, 1.2, 3500);            /* "something is coming" riser */
-  const sHit = (t, v) => { v = v || 0.5; tone(120, t, 0.28, 'sine', v, 40); fxNoise(t, 0.18, v * 0.5, 800, 0.8); };
-  const sTek = t => fxNoise(t, 0.07, 0.3, 3200, 1.5);
-  const sCymbal = (t, v) => fxNoise(t, 1.2, v || 0.12, 7000, 0.5, null, 'highpass');
-  const sBrass = (notes, t0, gap, len, v) => notes.forEach((f, i) => { tone(f, t0 + i * gap, len[i] || len, 'sawtooth', (v || 0.06)); tone(f * 2, t0 + i * gap, len[i] || len, 'triangle', (v || 0.06) * 1.6); });
+  const sRise = (t, d) => { fxNoise(t, d, 0.3, 300, 1.2, 4000); tone(300, t, d, 'sine', 0.08, 1500); };            /* suspense riser */
+  const sDrumroll = (t, d) => { const n = Math.floor(d / 0.05); for (let i = 0; i < n; i++) fxNoise(t + i * 0.05, 0.05, 0.06 + 0.22 * i / n, 2200, 0.8); };
+  const sBoom = (t, v) => { v = v || 0.5; tone(80, t, 0.7, 'sine', v, 30); fxNoise(t, 0.4, v * 0.5, 200, 0.7, 60, 'lowpass'); };
+  const sCrash = (t, v) => { fxNoise(t, 1.4, v || 0.18, 6500, 0.5, null, 'highpass'); tone(90, t, 0.5, 'sine', 0.4, 35); };
+  const sTada = t => { [[523, 659, 784], [659, 784, 1047]].forEach((ch, j) => ch.forEach(f => { tone(f, t + j * 0.18, j ? 1.2 : 0.16, 'sawtooth', 0.06); tone(f * 2, t + j * 0.18, j ? 1.2 : 0.16, 'triangle', 0.07); })); sCrash(t + 0.18, 0.16); };
+  const sPop = t => { fxNoise(t, 0.12, 0.5, 1800, 0.7); tone(900, t, 0.15, 'sine', 0.3, 180); for (let i = 0; i < 8; i++) tone(2000 + Math.random() * 2500, t + 0.08 + i * 0.06, 0.1, 'sine', 0.035); };   /* confetti pop */
+  const sCoin = (t, v) => { v = v || 0.07; tone(988, t, 0.07, 'square', v); tone(1319, t + 0.07, 0.35, 'square', v); tone(2637, t + 0.07, 0.25, 'sine', v * 0.6); };
+  const sCoins = (t, d, n) => { for (let i = 0; i < n; i++) tone(1200 + Math.random() * 1800, t + Math.random() * d, 0.12, 'sine', 0.05); };
+  const sHorn = t => { tone(420, t, 0.4, 'sawtooth', 0.09, 520); tone(840, t, 0.4, 'square', 0.03); };           /* party horn */
+  const sBell = (t, f, v) => { v = v || 0.12; tone(f, t, 0.8, 'sine', v); tone(f * 2.76, t, 0.5, 'sine', v * 0.35); };
+  const sCheer = (t, d) => { fxNoise(t, d, 0.2, 1800, 0.5, 3200); for (let i = 0; i < 10; i++) fxNoise(t + Math.random() * d, 0.05, 0.18, 2500 + Math.random() * 2000, 2); };   /* crowd / applause */
+  const sMagic = (t, m) => [1047, 1319, 1568, 2093, 2637, 3136, 3951].forEach((f, i) => { tone(f * (m || 1), t + i * 0.07, 0.6, 'sine', 0.07); tone(f * (m || 1) * 1.5, t + i * 0.07, 0.3, 'triangle', 0.02); });
+  const sArp8 = (t, m) => [262, 330, 392, 523, 659, 784, 1047].forEach((f, i) => tone(f * (m || 1), t + i * 0.07, 0.12, 'square', 0.07));   /* 8-bit level-up */
+  const sRatchet = (t, d) => { for (let i = 0; i < Math.floor(d / 0.06); i++) tone(1800, t + i * 0.06, 0.02, 'square', 0.05); };   /* slot-machine spin */
+  const sWhistleUp = (t, d) => tone(500, t, d, 'sine', 0.1, 2400);
+  const sWhistleDown = (t, d) => tone(2200, t, d, 'sine', 0.1, 500);
   const CLIP_SFX = {
-    pride() { sWhoosh(); sHit(0.5, 0.55); [196, 247, 294, 392].forEach(f => { tone(f, 0.5, 1.7, 'sawtooth', 0.07); tone(f * 2, 0.5, 1.7, 'triangle', 0.08); }); setTimeout(playRoarSound, 600); },
-    pirate() { sWhoosh(); sHit(0.5, 0.6); sHit(0.95, 0.4); tone(90, 1.3, 0.5, 'sawtooth', 0.2, 30); fxNoise(1.3, 0.5, 0.5, 500, 0.7, 120, 'lowpass');
-      [293, 349, 440, 349, 293].forEach((f, i) => { tone(f, 1.0 + i * 0.3, 0.32, 'sawtooth', 0.07); tone(f / 2, 1.0 + i * 0.3, 0.32, 'triangle', 0.1); }); fxNoise(0.3, 2.4, 0.12, 400, 0.6, 900, 'lowpass'); },
-    butterfly() { [1047, 1319, 1568, 2093, 2637, 3136].forEach((f, i) => { tone(f, 0.3 + i * 0.12, 0.8, 'sine', 0.08); tone(f * 1.5, 0.3 + i * 0.12, 0.4, 'triangle', 0.025); });
-      for (let i = 0; i < 14; i++) tone(2400 + (i % 3) * 300, 1.0 + i * 0.12, 0.1, 'sine', 0.03); sCymbal(0.3, 0.05); },
-    canada() { sWhoosh(); sBrass([392, 392, 523], 0.5, 0.22, [0.18, 0.18, 1.0], 0.07); for (let i = 0; i < 6; i++) fxNoise(0.5 + i * 0.07, 0.06, 0.2, 2500, 0.8); sCymbal(0.95, 0.12); },
-    kuwait() { sWhoosh(); sBrass([330, 415, 523], 0.5, 0.35, [0.3, 0.3, 1.2], 0.07); sHit(0.5, 0.4); [1568, 2093, 2637].forEach((f, i) => tone(f, 1.2 + i * 0.15, 0.8, 'sine', 0.05)); sCymbal(1.2, 0.1); },
-    saudi() { sWhoosh(); [196, 247, 294, 392, 494].forEach((f, i) => { tone(f, 0.5 + i * 0.12, 0.55, 'triangle', 0.14, f * 0.98); tone(f * 2, 0.5 + i * 0.12, 0.2, 'sine', 0.04); });
-      sHit(0.5, 0.45); sTek(0.8); sHit(1.1, 0.4); sTek(1.4); sHit(1.7, 0.4); sTek(2.0); },
-    qatar() { sWhoosh(); sBrass([523, 659, 784, 1047], 0.5, 0.13, [0.2, 0.2, 0.2, 1.0], 0.06); [1568, 2093, 2637].forEach((f, i) => tone(f, 1.0 + i * 0.12, 0.7, 'sine', 0.04)); sCymbal(1.0, 0.12); },
-    israel() { sWhoosh(); [392, 494, 587, 784, 988].forEach((f, i) => { tone(f, 0.5 + i * 0.1, 0.9, 'triangle', 0.1); tone(f * 2, 0.5 + i * 0.1, 0.5, 'sine', 0.035); }); tone(294, 0.5, 1.8, 'sine', 0.08); sCymbal(1.1, 0.07); },
-    palestine() { sWhoosh(); sHit(0.5, 0.55); sHit(0.85, 0.4); sTek(1.15); [262, 330, 392, 523].forEach((f, i) => { tone(f, 1.1 + i * 0.25, 1.0, 'triangle', 0.09); tone(f / 2, 1.1 + i * 0.25, 1.0, 'sine', 0.07); }); },
-    heli() { for (let i = 0; i < 34; i++) fxNoise(i * 0.075, 0.07, 0.04 + 0.4 * Math.sin(Math.PI * i / 34), 220, 3); tone(420, 0, 2.6, 'sine', 0.04, 520); tone(60, 0, 2.6, 'sawtooth', 0.06, 75); },
-    dragon() { sWhoosh(); tone(1800, 0.5, 0.5, 'sawtooth', 0.09, 700); tone(75, 0.5, 1.3, 'sawtooth', 0.3, 38); tone(150, 0.5, 1.3, 'square', 0.08, 60); fxNoise(0.5, 1.3, 0.35, 400, 0.7, 120, 'lowpass');
-      fxNoise(1.9, 0.3, 0.4, 250, 1); fxNoise(2.3, 0.3, 0.4, 250, 1); },
-    dragonfire() { fxNoise(0.3, 1.9, 0.45, 600, 0.6, 2200); tone(55, 0.3, 2, 'sawtooth', 0.14, 40); tone(90, 0.4, 0.7, 'sawtooth', 0.2, 50);
-      for (let i = 0; i < 22; i++) fxNoise(0.4 + Math.random() * 1.9, 0.04, 0.25 + Math.random() * 0.2, 1500 + Math.random() * 3000, 2); },
-    galaxy() { tone(55, 0, 2.8, 'sine', 0.3, 70); tone(110, 0, 2.2, 'sine', 0.14, 880); fxNoise(0, 1.4, 0.2, 200, 0.8, 2500);
-      [1568, 2349, 3136, 2093, 1568].forEach((f, i) => tone(f, 0.6 + i * 0.35, 0.9, 'sine', 0.05)); sHit(0.5, 0.3); },
-    lionrun() { tone(140, 0.1, 0.5, 'sawtooth', 0.15, 80);
-      for (let k = 0; k < 3; k++) [0, 0.14, 0.28].forEach(off => { const t = 0.2 + k * 0.9 + off; tone(110, t, 0.15, 'sine', 0.4, 45); fxNoise(t, 0.08, 0.15, 500, 1); }); }
+    pride() { sDrumroll(0, 1.0); sTada(1.0); sPop(1.0); sCheer(1.2, 2.8); },
+    pirate() { tone(90, 0, 0.7, 'sawtooth', 0.1, 200); fxNoise(0, 0.7, 0.1, 300, 2, 700); sBoom(0.7, 0.4); sCoin(0.9); sCoin(1.1); sCoin(1.3); sCoins(0.9, 2.2, 26); sCrash(1.5, 0.12); sMagic(3.0); },
+    butterfly() { sMagic(0.3); sPop(1.1); sMagic(1.5, 1.25); for (let i = 0; i < 14; i++) tone(2400 + (i % 3) * 300, 2.2 + i * 0.15, 0.12, 'sine', 0.04); },
+    canada() { sHorn(0.3); sPop(0.3); sHorn(0.8); sPop(0.8); sTada(1.4); sCheer(1.0, 3.2); },
+    kuwait() { sRatchet(0, 1.8); sBell(1.9, 880); sBell(2.2, 1175); sBell(2.5, 1568, 0.16); sCrash(2.5, 0.15); sCoins(2.6, 1.8, 30); },
+    saudi() { sBell(0.3, 988); sBell(0.6, 988); sBell(0.9, 1319, 0.16); sArp8(1.2); sCrash(1.9, 0.14); sCheer(2.0, 2.5); },
+    qatar() { sDrumroll(0, 1.6); sBoom(1.6, 0.55); sCrash(1.6, 0.2); sMagic(1.65); sPop(1.7); },
+    israel() { sMagic(0.2); sPop(1.0); sMagic(1.2, 1.2); sCheer(1.4, 3.0); },
+    palestine() { sArp8(0.2); sArp8(0.9, 1.5); sCoin(1.6); sCoin(1.85); sCoin(2.1); sCrash(2.3, 0.15); sCoins(2.4, 2.0, 14); },
+    heli() { for (let i = 0; i < 30; i++) fxNoise(i * 0.075, 0.07, 0.04 + 0.4 * Math.sin(Math.PI * i / 30), 220, 3); tone(420, 0, 2.2, 'sine', 0.04, 520); sWhistleDown(2.2, 1.0); sBoom(3.2, 0.3); sPop(3.3); sCoin(3.5); sCheer(3.6, 1.3); },
+    dragon() { sBoom(0.3, 0.6); tone(75, 0.3, 1.2, 'sawtooth', 0.28, 38); fxNoise(0.3, 1.2, 0.3, 400, 0.7, 120, 'lowpass'); sRise(1.2, 1.0); sCrash(2.2, 0.2); sTada(2.2); sPop(2.3); },
+    dragonfire() { for (let k = 0; k < 3; k++) { const t = 0.3 + k * 1.3; sWhistleUp(t, 0.5); fxNoise(t + 0.5, 0.3, 0.5, 900, 0.6, 200, 'lowpass'); sBoom(t + 0.5, 0.35); sCoins(t + 0.6, 0.5, 10); } sCheer(3.0, 1.8); },
+    galaxy() { tone(55, 0, 3, 'sine', 0.25, 70); sRise(0, 1.4); sBoom(1.4, 0.5); sMagic(1.45); [1568, 2349, 3136].forEach((f, i) => sBell(2.2 + i * 0.35, f, 0.07)); },
+    lionrun() { sWhistleUp(0, 0.4); for (let k = 0; k < 4; k++) [0, 0.14, 0.28].forEach(off => { const t = 0.2 + k * 0.8 + off; tone(110, t, 0.15, 'sine', 0.4, 45); fxNoise(t, 0.08, 0.15, 500, 1); }); sTada(3.5); sCheer(4.0, 0.9); }
   };
   function playClip(id) {
     const c = CLIPS[id], imgs = getClipImgs(id); if (!c || !imgs || !imgs.length) { showBurst('Effect frames missing'); return; }
     const W = LW(), H = LH();
     const fx = document.createElement('div'); fx.className = 'pride-fx';
+    { const hx = (c.col || '#6cc8ff').replace('#', ''), rgb = [0, 2, 4].map(k => parseInt(hx.substr(k, 2), 16)), mix = (a, b, p) => Math.round(a + (b - a) * p);
+      fx.style.setProperty('--cr', rgb.join(',')); fx.style.setProperty('--lt', rgb.map(v => mix(v, 255, 0.62)).join(',')); fx.style.setProperty('--dk', rgb.map(v => Math.round(v * 0.12)).join(','));
+      fx.style.setProperty('--rp', (c.rp || 26) + 'deg'); fx.style.setProperty('--rw', Math.round((c.rp || 26) * 0.27) + 'deg'); fx.style.setProperty('--rd', c.rd || '40deg');
+      const T = c.max || 8.4; fx.style.setProperty('--T', T + 's'); fx.style.setProperty('--TT', Math.max(1.5, T - 1.4) + 's'); }
     fx.innerHTML = '<div class="pride-dim"></div><div class="pride-rays"></div><div class="pride-glow"></div><div class="pride-bar t"></div><div class="pride-bar b"></div>';
     layer.appendChild(fx);
     const wrap = document.createElement('div'); wrap.className = 'pride-wrap pw-' + (c.mode === 'key' ? 'key' : c.mode === 'galaxy' ? 'galaxy' : 'full') + (c.fade ? ' pw-pride' : '');
@@ -2557,7 +2565,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     setTimeout(() => wrap.classList.add('in'), 450);
     const stars = setInterval(() => {
       if (!running) return;
-      const s = document.createElement('div'); s.className = 'pride-star'; s.textContent = Math.random() < .5 ? '✦' : '✧';
+      const s = document.createElement('div'); s.className = 'pride-star'; { const gl = Array.from(c.glyph || '✦✧'); s.textContent = gl[Math.floor(Math.random() * gl.length)]; }
       s.style.left = (8 + Math.random() * 84) + '%'; s.style.top = (35 + Math.random() * 45) + '%';
       s.style.fontSize = (12 + Math.random() * 22) + 'px'; s.style.setProperty('--d', (1.8 + Math.random() * 1.6) + 's');
       fx.appendChild(s); setTimeout(() => s.remove(), 3600);
@@ -2568,10 +2576,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       [784, 988, 1175].forEach((fq, i) => tone(fq * rt, 2.2 + i * 0.18, 0.9, 'sine', 0.08));
     }
     setTimeout(() => { screenFlash(); sparks(W / 2, H * 0.72, 34, 240); }, 500);
-    setTimeout(() => sparks(W * 0.3, H * 0.66, 18, 160), c.max ? 1300 : 2600);
-    setTimeout(() => sparks(W * 0.7, H * 0.66, 18, 160), c.max ? 1900 : 3400);
+    setTimeout(() => sparks(W * 0.3, H * 0.66, 18, 160), c.max ? 1800 : 2600);
+    setTimeout(() => sparks(W * 0.7, H * 0.66, 18, 160), c.max ? 2800 : 3400);
     const mx = (c.max || 8.5) * 1000;
-    setTimeout(() => wrap.classList.add('out'), c.max ? mx - 700 : 7000);
+    setTimeout(() => wrap.classList.add('out'), c.max ? mx - 1100 : 7000);
     setTimeout(() => { running = false; clearInterval(stars); fx.remove(); }, c.max ? mx : 8500);
   }
   function playPrideSequence() { playClip('pride'); }
@@ -2604,9 +2612,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function fxPlay(kind, coins) {
     if (kind === 'rose') { for (let i = 0; i < 3; i++) spawnGiftIcon('icon-rose', i * 160); tone(988, 0, .07, 'square', .06); tone(1319, .07, .3, 'square', .06); }
     else if (kind === 'perfume') { spawnGiftIcon('icon-perfume', 0); spawnGiftIcon('icon-perfume', 180); tone(900, 0, .1, 'square', .08); tone(1300, .08, .1, 'square', .08); }
-    else if (kind === 'lion') runCinematic(playLionSequence, 3000);
-    else if (kind === 'queen') runCinematic(playQueenSequence, 3000);
-    else if (kind === 'pride') runCinematic(playPrideSequence, 3000);
+    else if (kind === 'lion') runCinematic(playLionSequence, 5000);
+    else if (kind === 'queen') runCinematic(playQueenSequence, 5000);
+    else if (kind === 'pride') runCinematic(playPrideSequence, 5000);
     else if (CLIPS[kind]) runCinematic(() => playClip(kind), CLIPS[kind].max ? CLIPS[kind].max * 1000 : 8600);
   }
   function isHost(e) {
@@ -2629,7 +2637,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function fxAutoStep() { const k = ALL_KINDS[fxAutoIdx % ALL_KINDS.length]; fxAutoIdx++; fxPlay(k, 1); }
   function fxAutoToggle(zeroCount) {
     if (zeroCount === 1) { if (fxAutoTimer) { fxAutoStop(); showBurst('🎬 Auto show OFF'); } return; }
-    const ms = zeroCount === 4 ? 4500 : zeroCount === 3 ? 30000 : 60000;
+    const ms = zeroCount === 4 ? 6500 : zeroCount === 3 ? 30000 : 60000;
     if (fxAutoTimer && fxAutoMs === ms) { fxAutoStop(); showBurst('🎬 Auto show OFF'); return; }
     fxAutoStop(); fxAutoMs = ms;
     showBurst('🎬 Auto show ON (' + (ms / 1000) + 's)');
@@ -2655,7 +2663,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     });
     bar.appendChild(clipGrid);
     const autoRow = document.createElement('div'); autoRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px';
-    [['▶ Auto 4.5s (1.5s gap)', 4], ['▶ Auto 30s', 3], ['▶ Auto 60s', 2], ['⏹ Stop', 1]].forEach(([t, z]) => {
+    [['▶ Auto 6.5s (1.5s gap)', 4], ['▶ Auto 30s', 3], ['▶ Auto 60s', 2], ['⏹ Stop', 1]].forEach(([t, z]) => {
       const b = document.createElement('button'); b.textContent = t;
       b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); getAudio(); fxAutoToggle(z); });
       autoRow.appendChild(b);
