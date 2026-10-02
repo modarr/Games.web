@@ -734,8 +734,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     siren()   { tone(600, 0, .45, 'sawtooth', .13, 950); tone(950, .45, .45, 'sawtooth', .13, 600); tone(600, .9, .45, 'sawtooth', .13, 950); },
     meteor()  { noise(0, .5, .3, 320, .4); tone(220, 0, .5, 'sawtooth', .09, 60); },
     laser()   { tone(1250, 0, .09, 'square', .018, 380); },
-    roar()    { noise(0, 1.5, .5, 180, .7); noise(.1, 1.2, .3, 900, 1.2); tone(78, 0, 1.6, 'sawtooth', .2, 38); tone(52, .08, 1.4, 'square', .13, 30); tone(160, .15, 1.0, 'sawtooth', .07, 70); },
-    rumble()  { noise(0, .9, .35, 90, .8); tone(46, 0, .9, 'sine', .22, 30); },
+    roar()    { /* deep, echoing dread: a sub-bass groan that sinks, a dissonant low pair, and long repeating echoes */
+      for (let k = 0; k < 6; k++) {
+        const d = k * .42, v = Math.pow(.62, k);
+        tone(74, d, 1.5, 'sine', .34 * v, 30); tone(111, d, 1.3, 'triangle', .1 * v, 52);
+        tone(58, d + .03, 1.4, 'sawtooth', .07 * v, 27); noise(d, 1.2, .16 * v, 140, .9);
+      }
+      noise(0, 2.4, .22, 70, 1.4);
+    },
+    rumble()  { /* the darkness closing in: a low swell that rises and sinks, with a faint echo */
+      tone(34, 0, 1.4, 'sine', .3, 62); tone(48, .1, 1.2, 'triangle', .12, 30); noise(0, 1.3, .2, 80, 1);
+      tone(34, .5, 1.2, 'sine', .12, 50);
+    },
     voidOpen() { tone(260, 0, .6, 'sine', .1, 55); tone(90, .1, .8, 'triangle', .1, 40); },
     voidClose() { tone(140, 0, .25, 'sine', .14, 30); noise(0, .12, .1, 900, .3); },
     shipboom() { noise(0, .45, .34, 520, .5); tone(150, 0, .5, 'sawtooth', .13, 38); tone(70, .04, .45, 'sine', .16, 30); }
@@ -968,16 +978,19 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const t = monster.t, ease = u => u * u * (3 - 2 * u);
     const a = clamp(t / .7, 0, 1) * clamp((MONSTER_DUR - t) / .7, 0, 1);
     const roar = clamp((t - 1.1) / .25, 0, 1) * clamp((2.9 - t) / .3, 0, 1);
-    const open = ease(clamp(t / .6, 0, 1));
+    const open = ease(clamp((t - .45) / .9, 0, 1));
     const cx = W / 2 + roar * Math.sin(t * 70) * 4, cy = (ARENA.y0 + ARENA.y1) / 2 - 30 + roar * Math.cos(t * 63) * 3;
     const R = Math.min(W * .62, (ARENA.y1 - ARENA.y0) * .55) * (.82 + .2 * ease(clamp(t / 1, 0, 1)) + roar * .08);
     ctx.save();
-    if (roar > 0) { ctx.fillStyle = 'rgba(140,0,0,' + (.2 * roar) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+    { const dk = .8 * clamp(t / .9, 0, 1) * clamp((MONSTER_DUR - t) / .7, 0, 1);   // the room goes dark first
+      ctx.fillStyle = 'rgba(0,0,6,' + dk + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+    if (roar > 0) { ctx.fillStyle = 'rgba(120,0,0,' + (.16 * roar) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
     ctx.globalAlpha = a * .93;
     const g = ctx.createRadialGradient(cx, cy, R * .2, cx, cy, R * 1.25);
-    g.addColorStop(0, 'rgba(0,0,0,.97)'); g.addColorStop(.62, 'rgba(24,0,26,.92)'); g.addColorStop(1, 'rgba(90,0,60,0)');
+    g.addColorStop(0, 'rgba(0,0,0,.6)'); g.addColorStop(.62, 'rgba(14,0,16,.45)'); g.addColorStop(1, 'rgba(90,0,60,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.25, 0, TAU); ctx.fill();
-    // eyes + angry brows
+    // eyes + angry brows: they open in the dark, flickering
+    ctx.globalAlpha = a * .95 * clamp((t - .4) / .7, 0, 1) * (t < 1.1 ? .75 + .25 * Math.sin(t * 38) : 1);
     const ey = cy - R * .3, ex = R * .43;
     for (const s of [-1, 1]) {
       ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(s * .32);
@@ -989,7 +1002,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.beginPath(); ctx.moveTo(-s * R * .26, -R * .2 * open); ctx.lineTo(s * R * .24, -R * .02 * open - R * .02); ctx.stroke();
       ctx.restore();
     }
-    // mouth + teeth
+    // mouth + teeth: only appear out of the black as it roars
+    ctx.globalAlpha = a * .95 * clamp((t - .95) / .35, 0, 1);
     const my = cy + R * .22, mw = R * .86, mh = R * (.06 + .56 * roar);
     const mcy = my + mh / 2;
     ctx.fillStyle = '#0c0006'; ctx.beginPath(); ctx.ellipse(cx, mcy, mw / 2, mh / 2 + 3, 0, 0, TAU); ctx.fill();
