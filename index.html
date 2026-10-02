@@ -136,7 +136,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #selfpanel button:active{background:#3a2a8a}
 #selfpanel .note{margin:calc(var(--u)*1.6) 0 0;font-size:max(10px,calc(var(--u)*2.5));color:rgba(246,242,255,.6);line-height:1.35}
 #tip{position:absolute;top:calc(var(--u)*46);left:50%;transform:translateX(-50%);z-index:44;pointer-events:none;max-width:92%;text-align:center;white-space:nowrap;font-weight:800;font-size:max(12px,calc(var(--u)*3));color:#fff;padding:calc(var(--u)*1.1) calc(var(--u)*3.4);border-radius:calc(var(--u)*5);background:rgba(11,8,32,.72);border:1px solid rgba(255,210,63,.55);text-shadow:0 0 calc(var(--u)*2) rgba(255,210,63,.7);opacity:0}
-#tip.on{animation:tip 4s ease-out}
+#tip.on{animation:tip 6s ease-out}
 @keyframes tip{0%{opacity:0;transform:translateX(-50%) translateY(calc(var(--u)*-2)) scale(.92)}8%{opacity:1;transform:translateX(-50%)}88%{opacity:1}100%{opacity:0}}
 #roundbar{position:absolute;top:calc(var(--u)*3);left:50%;transform:translateX(-50%);z-index:45;background:rgba(11,8,32,.72);border:1px solid rgba(255,255,255,.2);border-radius:calc(var(--u)*6);padding:calc(var(--u)*1.4) calc(var(--u)*4);font-weight:800;font-size:max(13px,calc(var(--u)*3.4));color:var(--gold);letter-spacing:.02em;pointer-events:none;text-align:center;white-space:nowrap}
 #roundbar.hot{color:#ff5a7a;animation:rpulse .6s infinite}
@@ -959,12 +959,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const TIPS_SHIP = ['🚀 Gift for firepower. Blast your enemies!', '💥 Gift 100+ coins for a full-ring blast!'];
   function showTip() {
     if (!tipEl || round.phase !== 'play') return false;
-    if (time - lastGiftAt < 3) return false;   // let the gift celebration breathe
+    if (time - lastGiftAt < 1.2) return false;   // let the gift celebration breathe
     const list = TIPS_COMMON.concat(shipMode ? TIPS_SHIP : TIPS_BLADES);
     tipEl.textContent = list[tipIdx++ % list.length];
     tipEl.classList.remove('on'); void tipEl.offsetWidth; tipEl.classList.add('on'); return true;
   }
-  (function tipLoop() { setTimeout(() => { tipLoop._d = showTip() ? 22000 : 2500; tipLoop(); }, tipLoop._d || 9000); })();
+  (function tipLoop() { setTimeout(() => { tipLoop._d = showTip() ? 20000 : 1000; tipLoop(); }, tipLoop._d || 6000); })();
 
   /* ---------- THE MONSTER: wakes up with 30s left in a round (or on host command x0x), roars, shakes everything, hurts everyone ---------- */
   let monster = null;
