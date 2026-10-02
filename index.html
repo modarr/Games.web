@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <title>Blade Bubbles Live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
 <!--
   BLADE BUBBLES  (TikTok Live overlay game)   build: studio
     overlay build: clean stream overlay. Auto-connects to the TikFinity desktop app (ws://127.0.0.1:21213/). Add demo=1 to preview with fake viewers.
@@ -39,7 +39,7 @@
   --bg:#06040f; --cyan:#35e0ff; --hot:#ff3d81; --gold:#ffd23f; --ink:#f6f2ff;
   --w:100vw;
   --u:calc(var(--w)/100);
-  --display:'Bungee',Impact,'Arial Black',sans-serif;
+  --display:'Cinzel','Playfair Display',Georgia,serif;
   --body:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -128,12 +128,33 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #roundbar{position:absolute;top:calc(var(--u)*3);left:50%;transform:translateX(-50%);z-index:45;background:rgba(11,8,32,.72);border:1px solid rgba(255,255,255,.2);border-radius:calc(var(--u)*6);padding:calc(var(--u)*1.4) calc(var(--u)*4);font-weight:800;font-size:max(13px,calc(var(--u)*3.4));color:var(--gold);letter-spacing:.02em;pointer-events:none;text-align:center;white-space:nowrap}
 #roundbar.hot{color:#ff5a7a;animation:rpulse .6s infinite}
 @keyframes rpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
-#winbig{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:calc(var(--u)*2);background:radial-gradient(circle,rgba(30,10,60,.55),rgba(5,3,15,.85));opacity:0;pointer-events:none;transition:opacity .4s}
+#winbig{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(46,28,6,.62),rgba(4,2,10,.92));opacity:0;pointer-events:none;transition:opacity .8s ease;overflow:hidden}
 #winbig.on{opacity:1}
-#winbig .crown{font-size:calc(var(--u)*20);animation:winbob 1s ease-in-out infinite}
-@keyframes winbob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
-#winbig .wname{font-family:'Bungee',system-ui;font-size:calc(var(--u)*8);color:#fff;text-shadow:0 0 20px var(--gold),0 2px 6px rgba(0,0,0,.9);text-align:center;padding:0 calc(var(--u)*4)}
-#winbig .wsub{font-size:calc(var(--u)*3.6);color:var(--gold);font-weight:700}
+#winbig .wrays{position:absolute;left:50%;top:50%;width:230vmax;height:230vmax;margin:-115vmax 0 0 -115vmax;background:repeating-conic-gradient(from 0deg,rgba(255,214,102,.15) 0 6deg,transparent 6deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 42%);mask-image:radial-gradient(circle,#000 0,transparent 42%);animation:wspin 26s linear infinite}
+@keyframes wspin{to{transform:rotate(360deg)}}
+#winbig .wcard{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:calc(var(--u)*1.8);transform:scale(.86) translateY(calc(var(--u)*3));opacity:0;transition:transform 1.1s cubic-bezier(.2,.9,.2,1) .2s,opacity .9s ease .2s}
+#winbig.on .wcard{transform:none;opacity:1}
+#winbig .wkick{font-family:'Cinzel',Georgia,serif;font-weight:800;letter-spacing:.42em;padding-left:.42em;font-size:calc(var(--u)*3.2);color:#ffe9a8;text-shadow:0 0 14px rgba(255,200,80,.7)}
+#winbig .wcrown{font-size:calc(var(--u)*17);line-height:1;filter:drop-shadow(0 0 24px rgba(255,200,70,.9));animation:winbob 2.6s ease-in-out infinite}
+@keyframes winbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(calc(var(--u)*-1.4)) rotate(3deg)}}
+#winbig .wname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:calc(var(--u)*9);letter-spacing:.06em;line-height:1.08;background:linear-gradient(180deg,#fff7d6,#ffd36b 55%,#c98a1b);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 14px rgba(0,0,0,.8)) drop-shadow(0 0 22px rgba(255,200,70,.55));padding:0 calc(var(--u)*5);max-width:94vw;overflow-wrap:anywhere}
+#winbig .wline{width:calc(var(--u)*36);height:2px;background:linear-gradient(90deg,transparent,#ffd36b,transparent)}
+#winbig .wsub{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:600;font-size:calc(var(--u)*3.9);color:#fff1c2;letter-spacing:.04em}
+#winbig .wconf{position:absolute;inset:0;pointer-events:none}
+#winbig .wconf i{position:absolute;top:-6%;opacity:.92;animation:wfall linear forwards}
+@keyframes wfall{to{transform:translateY(118vh) rotate(720deg)}}
+#roundcard{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*1.6);pointer-events:none;opacity:0;transition:opacity .5s ease}
+#roundcard.on{opacity:1}
+#roundcard .rcs{font-family:'Cinzel',Georgia,serif;font-weight:800;letter-spacing:.5em;padding-left:.5em;font-size:calc(var(--u)*3.2);color:#e9f7ff;text-shadow:0 0 16px rgba(120,210,255,.9),0 2px 8px rgba(0,0,0,.8)}
+#roundcard .rcn{font-family:'Cinzel',Georgia,serif;font-weight:800;line-height:1;font-size:calc(var(--u)*17);background:linear-gradient(180deg,#fff,#b9ecff 55%,#4fb8ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 20px rgba(90,190,255,.85)) drop-shadow(0 4px 10px rgba(0,0,0,.7))}
+#roundcard.on .rcn{animation:rcpop .7s cubic-bezier(.2,1.5,.4,1)}
+#roundcard.fight .rcn{font-size:calc(var(--u)*20);letter-spacing:.12em;padding-left:.12em;background:linear-gradient(180deg,#fff7d6,#ffd36b 55%,#e8891b);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 24px rgba(255,190,60,.9)) drop-shadow(0 4px 10px rgba(0,0,0,.7))}
+#roundcard.fight .rcs{color:#ffe9a8;text-shadow:0 0 16px rgba(255,200,80,.9),0 2px 8px rgba(0,0,0,.8)}
+#roundcard.fresh .rcn{font-size:calc(var(--u)*9.5);letter-spacing:.1em;padding-left:.1em;text-align:center}
+@keyframes rcpop{0%{transform:scale(1.7);opacity:0}60%{transform:scale(.96);opacity:1}100%{transform:scale(1)}}
+#banner .m,#banner .s,#giftpop .gpname,#crownpop .cpname,#cd10,#lb .hd,#legend .lh{font-weight:800}
+#lb .nm{font-family:'Playfair Display',Georgia,serif;font-weight:700}
+#roundbar{font-family:'Cinzel',Georgia,serif;font-weight:800;letter-spacing:.08em}
 #giftpop{position:absolute;left:50%;top:18%;transform:translate(-50%,0) scale(.7);z-index:40;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s, transform .25s}
 #giftpop.on{opacity:.92;transform:translate(-50%,0) scale(1)}
 #giftpop img{width:calc(var(--u)*16);height:calc(var(--u)*16);border-radius:50%;border:3px solid var(--gold);box-shadow:0 0 30px rgba(255,210,63,.7);object-fit:cover}
@@ -444,10 +465,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   </div>
   <div id="roundbar"></div>
   <div id="winbig">
-    <div class="crown">👑</div>
-    <div class="wname" id="winname"></div>
-    <div class="wsub" id="winsub"></div>
+    <div class="wrays"></div>
+    <div class="wconf" id="wconf"></div>
+    <div class="wcard">
+      <div class="wkick" id="winkick">ROUND CHAMPION</div>
+      <div class="wcrown">👑</div>
+      <div class="wname" id="winname"></div>
+      <div class="wline"></div>
+      <div class="wsub" id="winsub"></div>
+    </div>
   </div>
+  <div id="roundcard"><div class="rcs" id="rcs"></div><div class="rcn" id="rcn"></div></div>
   <div id="giftpop">
     <img id="gpimg" alt="">
     <div class="gpname" id="gpname"></div>
@@ -530,7 +558,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     shield: 2.2, hitCd: 0.16,
     dmgBase: 1.5, dmgPerBlade: 1.2, dmgPct: 0.012, steal: 0.35, killBonus: 6,
     bigGift: 100,                                    // coins needed for a spoken shout-out
-    roundSecs: 240, roundGap: 20, roundSecsStudio: 180                     // 4-minute rounds with a 20s break between
+    roundSecs: 240, roundGap: 20, roundSecsStudio: 180, idleSecs: +(Q.get('idle') || 90), idleRoundReset: 45                     // 4-minute rounds with a 20s break between
   };
   // Approximate current coin prices (they change; the game only uses the coin value it receives)
   const GIFTS = [
@@ -827,7 +855,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     p.x = best.x; p.y = best.y;
     p.heading = rf(0, TAU); p.vx = Math.cos(p.heading) * 40; p.vy = Math.sin(p.heading) * 40;
     p.shield = CFG.shield; p.pulse = 1; p.flash = 0; p.cd = {}; p.commentT = 0; p.lastFloat = 0;
-    p.stun = 0; p.mega = 0; p.glow = 0; p.bombCd = 1.5; p.zapCd = 2;
+    p.stun = 0; p.mega = 0; p.glow = 0; p.bombCd = 1.5; p.zapCd = 2; p.base = undefined;
   }
   function joinPlayer(name, avatar, bot, silent) {
     const key = name.toLowerCase();
@@ -843,7 +871,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
     if (STUDIO && !bot) { p.points = studioStartPts(); p.blades = 1; p.r = p.tr = radFor(p.points) * sizeScale; welcome(p); }
-    roster.set(key, p); players.push(p);
+    p.lastAct = time; roster.set(key, p); players.push(p);
     if (!silent) { if (!STUDIO) feed('👋 ' + name + ' joined', 'join'); sfx.join(); }
     ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', 60, .5, 3);
     return p;
@@ -915,7 +943,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const rank = document.createElement('span'); rank.textContent = i + 1;
       const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = 'hsl(' + p.hue + ',90%,60%)';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = p.name;
-      const pt = document.createElement('span'); pt.className = 'pt'; pt.textContent = fmt(p.points);
+      const pt = document.createElement('span'); pt.className = 'pt'; pt.textContent = fmt(scoreOf(p));
       row.append(rank, dot, nm);
       const w = (p.blades ? '⚔' + p.blades : '') + (p.bombs ? ' 💣' + p.bombs : '');
       if (w) { const b = document.createElement('span'); b.className = 'bl'; b.textContent = w; row.appendChild(b); }
@@ -1006,8 +1034,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (round.t <= 0) endRound();
     } else {
       bar.classList.remove('hot');
-      bar.textContent = '🔥 Next round in ' + fmtT(round.t) + '...';
+      bar.textContent = '✦ Next round in ' + fmtT(round.t) + ' ✦';
       if (cd.classList.contains('on')) { cd.classList.remove('on', 'beat'); cd.dataset.n = ''; }
+      if (!round.reset && CFG.roundGap - round.t >= round.resetAt) { round.reset = true; resetBoard(); }
+      if (round.t <= 3 && round.t > 0) { const n = Math.ceil(round.t); if (round.cdn !== n) { round.cdn = n; showCard('GET READY', String(n), 1100, 'num'); sfx.tick(n === 1); } }
       if (round.t <= 0) startRound();
     }
   }
@@ -1030,15 +1060,61 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       spark(cand.x, cand.y, 'hsl(' + hue + ',100%,70%)', 18, 240, .9);
     }, i * 150);
   }
+  function scoreOf(p) { return Math.max(0, p.points - (p.base == null ? 0 : p.base)); }
+  function vanish(p) {
+    if (!p || p.permanent) return;
+    spark(p.x, p.y, '#fff', 16, 180, .6); ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', p.r + 30, .5, 3);
+    p.alive = false; roster.delete(p.key); const i = players.indexOf(p); if (i >= 0) players.splice(i, 1);
+    if (leader === p) leader = null;
+    if (champion === p) { champion = null; championName = null; }
+  }
+  function purgeIdle(maxIdle) {
+    for (const p of players.slice()) {
+      if (!p.alive || p.permanent || p.filler) continue;
+      if (time - (p.lastAct == null ? time : p.lastAct) > maxIdle) { vanish(p); feed('👋 ' + p.name + ' left', 'join'); }
+    }
+  }
+  let cardT = null;
+  function showCard(small, big, ms, kind) {
+    const el = $('roundcard'); $('rcs').textContent = small || ''; $('rcn').textContent = big || '';
+    el.className = ''; void el.offsetWidth; el.className = 'on ' + (kind || '');
+    clearTimeout(cardT); if (ms) cardT = setTimeout(() => el.classList.remove('on'), ms);
+  }
+  function confetti() {
+    const box = $('wconf'); box.textContent = '';
+    for (let i = 0; i < 70; i++) {
+      const c = document.createElement('i'), w = 5 + Math.random() * 7;
+      c.style.cssText = 'left:' + (Math.random() * 100) + '%;width:' + w + 'px;height:' + (w * 1.7) + 'px;background:hsl(' + Math.floor(Math.random() * 360) + ',90%,62%);animation-duration:' + (3 + Math.random() * 3.2) + 's;animation-delay:' + (Math.random() * 2.2) + 's;border-radius:' + (Math.random() < .4 ? '50%' : '2px');
+      box.appendChild(c);
+    }
+    setTimeout(() => { box.textContent = ''; }, 8500);
+  }
+  function resetBoard() {
+    purgeIdle(CFG.idleRoundReset);
+    champion = null; championName = null; leader = null;
+    const sp = STUDIO ? STUDIO_PTS : CFG.startPoints;
+    for (const p of players) {
+      if (!p.alive) continue;
+      spawnPlayer(p, sp);
+      p.base = sp; p.blades = STUDIO ? 1 : 0; p.bombs = 0; p.lightning = 0; p.gifted = 0; p.dbl = 0; p.kills = 0;
+      p.graceT = 6; p.shield = 4; p.pulse = 1;
+      ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', p.r + 40, .7, 3); spark(p.x, p.y, '#fff', 8, 140, .6);
+    }
+    showCard('A NEW SESSION', 'SCORES RESET', 2400, 'fresh');
+    feed('♻️ New session: everyone starts again from 0', 'join'); sfx.crown();
+  }
   function endRound() {
     const al = aliveList().sort((a, b) => b.points - a.points);
-    round.phase = 'gap'; round.t = CFG.roundGap;
+    round.phase = 'gap'; round.t = CFG.roundGap; round.reset = false; round.cdn = 0;
+    const winMs = Math.min(8000, Math.max(2500, (CFG.roundGap - 6) * 1000));
+    round.resetAt = winMs / 1000 + 0.9;
+    $('winkick').textContent = 'ROUND ' + round.num + ' CHAMPION';
     if (al.length) {
       const w = al[0];
       champion = w; championName = w.name;
-      $('winname').textContent = '👑 ' + w.name;
-      $('winsub').textContent = 'Round ' + round.num + ' champion · ' + Math.round(w.points).toLocaleString() + ' points';
-      $('winbig').classList.add('on');
+      $('winname').textContent = w.name;
+      $('winsub').textContent = Math.round(scoreOf(w)).toLocaleString() + ' points';
+      $('winbig').classList.add('on'); confetti();
       ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
       sfx.horn(); shake(3);
       if (STUDIO) {
@@ -1048,27 +1124,31 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
           spark(w.x, w.y, 'hsl(' + hue + ',100%,70%)', 24, 260, 1);
           sfx.gift(3);
         }, i * 220);
+        for (let i = 0; i < 9; i++) setTimeout(() => {
+          const fx = rf(ARENA.x0 + 40, ARENA.x1 - 40), fy = rf(ARENA.y0 + 60, ARENA.y1 - 200), hue = Math.random() * 360;
+          spark(fx, fy, 'hsl(' + hue + ',100%,68%)', 30, 280, 1.2); ring(fx, fy, 'hsl(' + hue + ',100%,70%)', 80, .7, 3); sfx.gift(2);
+        }, 300 + i * 260);
       }
-      if (STUDIO) for (let i = 0; i < 9; i++) setTimeout(() => {
-        const fx = rf(ARENA.x0 + 40, ARENA.x1 - 40), fy = rf(ARENA.y0 + 60, ARENA.y1 - 200), hue = Math.random() * 360;
-        spark(fx, fy, 'hsl(' + hue + ',100%,68%)', 30, 280, 1.2); ring(fx, fy, 'hsl(' + hue + ',100%,70%)', 80, .7, 3); sfx.gift(2);
-      }, 300 + i * 260);
       feed('👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
-      setTimeout(() => $('winbig').classList.remove('on'), CFG.roundGap > 6 ? 5000 : (CFG.roundGap - 1) * 1000);
+      setTimeout(() => $('winbig').classList.remove('on'), winMs);
     } else {
-      $('winname').textContent = '🌀 No champion yet';
+      $('winkick').textContent = 'ROUND OVER';
+      $('winname').textContent = 'No champion yet';
       $('winsub').textContent = 'Comment, like or share to join the next round!';
       $('winbig').classList.add('on');
-      setTimeout(() => $('winbig').classList.remove('on'), 4000);
+      setTimeout(() => $('winbig').classList.remove('on'), Math.min(4000, winMs));
     }
   }
   function startRound() {
+    if (!round.reset) { round.reset = true; resetBoard(); }
     round.num++; round.phase = 'play'; round.t = ROUND_SECS; round.calledHalf = false; round.called30 = false;
-    for (const p of players) if (p.alive) { p.points = STUDIO ? studioStartPts() : 8; p.pulse = 1; }
-    showMotiv('⚔️ Round ' + round.num + ' has begun!' + (championName ? ' 👑 ' + championName + ' defends the crown!' : ''));
-    feed('⚔️ Round ' + round.num + ' begins!' + (championName ? ' 👑 ' + championName + ' defends the crown.' : ''), 'join');
+    showCard('ROUND ' + round.num, 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
+    showMotiv('⚔️ Round ' + round.num + ' has begun!');
+    feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
 
+
+  window.__endRound = () => { if (round.phase === 'play') endRound(); };
 
   /* ---------- Events (public API) ---------- */
   function addPoints(p, n) { p.points += n; p.pulse = 1; }
@@ -1078,6 +1158,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (!e || !e.user) return;
     const name = String(e.user).slice(0, 16);
     const type = String(e.type || 'tap').toLowerCase();
+    if (type === 'leave' || type === 'left') { const q = roster.get(name.toLowerCase()); if (q && !q.permanent) { vanish(q); feed('👋 ' + q.name + ' left', 'join'); } return; }
     let p = roster.get(name.toLowerCase());
     if (p && p.filler && !e.bot) p.filler = false;
     if (!p) { p = joinPlayer(name, e.avatar, e.bot); if (!p) return; }
@@ -1090,6 +1171,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
+    p.lastAct = time;
     const x = p.x, y = p.y - p.r;
     const count = clamp(parseInt(e.count, 10) || 1, 1, 50);
     if (type === 'tap' || type === 'like') {
@@ -1185,6 +1267,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         case 'share': event({ type: 'share', user, avatar }); break;
         case 'follow': event({ type: 'tap', user, avatar, count: 5 }); break;
         case 'member': case 'join': event({ type: 'join', user, avatar }); break;
+        case 'leave': case 'left': case 'memberleave': case 'member_leave': event({ type: 'leave', user, avatar }); break;
       }
       return;
     }
@@ -1465,9 +1548,11 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     p.vx += (dx * sp - p.vx) * k; p.vy += (dy * sp - p.vy) * k;
   }
 
+  let purgeT = 3;
   function update(dt) {
     time += dt;
     roundTick(dt);
+    purgeT -= dt; if (purgeT <= 0) { purgeT = 3; purgeIdle(CFG.idleSecs); }
     if (STUDIO) updateFood(dt);   // random power-up orbs removed
     const alive = aliveList();
     sizeScale = clamp(1 - (alive.length - CFG.crowdStart) * CFG.crowdStep, CFG.crowdMin, 1);
@@ -1477,7 +1562,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
     for (const p of alive) {
       if (STUDIO && p.graceT > 0) p.graceT = Math.max(0, p.graceT - dt);
+      if (p.base == null) p.base = p.points;
       if (STUDIO && !p.filler && !(p.graceT > 0)) p.points = Math.max(4, p.points - dt * (0.9 + p.points * 0.008));
+      if (p.points < p.base) p.base = p.points;
       p.tr = radFor(p.points) * sizeScale;
       p.r += clamp(p.tr - p.r, -CFG.shrinkRate * dt, CFG.growRate * dt);   // growth is rate-limited
       p.pulse = Math.max(0, p.pulse - dt * 4); p.flash = Math.max(0, p.flash - dt);
@@ -1663,17 +1750,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
     // name + points
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-    const pts = fmt(p.points);
+    const pts = fmt(scoreOf(p));
     if (r >= 30) {
       const fs = clamp(r * .27, 9, 17);
-      ctx.font = '700 ' + fs + 'px Rubik, system-ui, sans-serif';
+      ctx.font = '700 ' + fs + 'px Playfair Display, Georgia, serif';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.fillStyle = '#fff';
       const nm = fitText(p.name, r * 1.6);
       ctx.strokeText(nm, 0, r * .5); ctx.fillText(nm, 0, r * .5);
       ctx.font = '700 ' + (fs * .95) + 'px Rubik, system-ui, sans-serif'; ctx.fillStyle = '#ffe680';
       ctx.strokeText(pts, 0, r * .5 + fs * 1.05); ctx.fillText(pts, 0, r * .5 + fs * 1.05);
     } else {
-      ctx.font = '700 11px Rubik, system-ui, sans-serif';
+      ctx.font = '700 11px Playfair Display, Georgia, serif';
       const label = fitText(p.name, 70) + ' ' + pts;
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.fillStyle = '#fff';
       ctx.strokeText(label, 0, r + 9); ctx.fillText(label, 0, r + 9);
@@ -2669,6 +2756,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       autoRow.appendChild(b);
     });
     bar.appendChild(autoRow);
+    { const eb = document.createElement('button'); eb.textContent = '🏁 End round now'; eb.style.marginTop = '4px';
+      eb.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); getAudio(); if (window.__endRound) window.__endRound(); });
+      bar.appendChild(eb); }
     game.appendChild(bar);
   }
 })();
