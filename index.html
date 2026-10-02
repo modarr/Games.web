@@ -101,6 +101,9 @@ body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visib
 #banner .s{margin-top:calc(var(--u)*2);font-family:var(--display);font-size:calc(var(--u)*5);line-height:1.15;color:#fff;text-shadow:0 calc(var(--u)*.5) 0 #4a1a91,0 0 calc(var(--u)*5) rgba(255,61,129,.8)}
 #banner.big .m{font-size:calc(var(--u)*14);opacity:.8}
 #banner.crown .m{font-size:calc(var(--u)*4.2);opacity:1;display:inline-block;background:rgba(10,6,24,.72);border:1px solid rgba(255,210,63,.5);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.4) calc(var(--u)*3.2);text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 calc(var(--u)*3) rgba(255,210,63,.5)}
+#cd10 .cdhint{margin-top:calc(var(--u)*2.5);font:800 calc(var(--u)*3.8) system-ui;color:#ffe9a6;text-shadow:0 0 8px #000,0 0 18px #000}
+#banner.mon{top:40%}
+#banner.mon .m{font-size:calc(var(--u)*11);color:#fff;text-shadow:0 calc(var(--u)*.7) 0 #8a0f0f,0 0 calc(var(--u)*9) rgba(255,40,40,.95);opacity:.95;letter-spacing:.02em}
 #banner.mega .m{font-size:calc(var(--u)*17);color:#fff;text-shadow:0 calc(var(--u)*.8) 0 #a1310f,0 0 calc(var(--u)*9) rgba(255,210,63,.95);opacity:.78}
 #banner.on{animation:banner var(--bt,3s) ease-out}
 @keyframes banner{0%{opacity:0;transform:scale(1.9)}9%{opacity:1;transform:scale(1)}86%{opacity:1}100%{opacity:0}}
@@ -152,6 +155,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #winbig .wname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:calc(var(--u)*9);letter-spacing:.06em;line-height:1.08;background:linear-gradient(180deg,#fff7d6,#ffd36b 55%,#c98a1b);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 14px rgba(0,0,0,.8)) drop-shadow(0 0 22px rgba(255,200,70,.55));padding:0 calc(var(--u)*5);max-width:94vw;overflow-wrap:anywhere}
 #winbig .wline{width:calc(var(--u)*36);height:2px;background:linear-gradient(90deg,transparent,#ffd36b,transparent)}
 #winbig .wsub{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:600;font-size:calc(var(--u)*3.9);color:#fff1c2;letter-spacing:.04em}
+#winbig .wgift{margin-top:calc(var(--u)*1.6);font:700 calc(var(--u)*2.9)/1.3 system-ui;color:#9fe8ff;text-shadow:0 2px 10px rgba(0,0,0,.6)}
 #winbig .wconf{position:absolute;inset:0;pointer-events:none}
 #winbig .wconf i{position:absolute;top:-6%;opacity:.92;animation:wfall linear forwards}
 @keyframes wfall{to{transform:translateY(118vh) rotate(720deg)}}
@@ -488,6 +492,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       <div class="wname" id="winname"></div>
       <div class="wline"></div>
       <div class="wsub" id="winsub"></div>
+      <div class="wgift" id="wgift"></div>
     </div>
   </div>
   <div id="roundcard"><div class="rcs" id="rcs"></div><div class="rcn" id="rcn"></div></div>
@@ -502,7 +507,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     <div class="cpname" id="cpname"></div>
     <div class="cpsub">is in the lead!</div>
   </div>
-  <div id="cd10"><div class="cdring"></div><div class="cdnum" id="cdnum"></div></div>
+  <div id="cd10"><div class="cdring"></div><div class="cdnum" id="cdnum"></div><div class="cdhint">🎁 Send a Rose: +1 second!</div></div>
   <div id="fxLayer"></div>
   <pre id="dbg" hidden></pre>
 </div>
@@ -932,7 +937,24 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---------- Rotating reminder tip: tap/share/comment for points, gift for power. Context-aware (blades vs ships). ---------- */
   let lastGiftAt = -99, tipIdx = 0;
   const tipEl = document.getElementById('tip');
-  const TIPS_COMMON = ['👆 Tap, share & comment for more points!', '💬 Comment & share to grow your bubble!'];
+  const wgiftEl = document.getElementById('wgift');
+  const GIFT_HINTS = [
+    '🌹 Rose (1 coin) = +1 second on the clock & a blade ⚔️',
+    '🧴 Perfume (20) = +20 seconds, more life, hits your nearest enemy!',
+    '🍩 Doughnut (30) = +30 seconds & more life!',
+    '🫶 Hand Hearts (100) = DESTROYS enemies + 60 seconds!',
+    '⏱️ 1 coin = 1 extra second. Every coin counts!',
+    '🎁 Gifts of 20+ strike whoever is closest to you!'
+  ];
+  let wgiftT = null;
+  function wgiftStart() {
+    if (!wgiftEl) return;
+    let i = 0; wgiftEl.textContent = GIFT_HINTS[0];
+    clearInterval(wgiftT);
+    wgiftT = setInterval(() => { i = (i + 1) % GIFT_HINTS.length; wgiftEl.textContent = GIFT_HINTS[i]; }, 2200);
+  }
+  function wgiftStop() { clearInterval(wgiftT); wgiftT = null; }
+  const TIPS_COMMON = ['👆 Tap, share & comment for more points!', '💬 Comment & share to grow your bubble!', '⏱️ 1 coin = +1 second on the clock!'];
   const TIPS_BLADES = ['🎁 Gift for blades. Strike harder!', '💥 Gift 100+ coins to DESTROY your enemies!'];
   const TIPS_SHIP = ['🚀 Gift for firepower. Blast your enemies!', '💥 Gift 100+ coins for a full-ring blast!'];
   function showTip() {
@@ -951,10 +973,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (monster) return;
     monster = { t: 0, hit: false, snd: false };
     sfx.rumble(); shake(6);
-    try { banner('FIGHT FOR YOUR LIFE', 'ONLY HEROES SURVIVE', 'mega', 3.4); } catch (e) {}
+    try { banner('ONLY HEROES SURVIVE', '', 'mon', 2.2); } catch (e) {}
     try { feed('👹 THE MONSTER AWAKENS!', 'kill'); } catch (e) {}
   }
   window.__fxMonster = () => { if (round.phase === 'play') startMonster(true); };
+  window.__fxKill = () => { const al = aliveList(); if (al.length > 2) { const v = al[Math.floor(Math.random() * al.length)]; hurt(v, v.points + 1, null, 'test'); } };
+  window.__fxState = () => ({ t: round.t, phase: round.phase, alive: aliveList().map(q => [q.name, Math.round(q.points)]) });
   function updateMonster(dt) {
     if (!monster) return;
     monster.t += dt; const t = monster.t;
@@ -991,15 +1015,34 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.25, 0, TAU); ctx.fill();
     // eyes + angry brows: they open in the dark, flickering
     ctx.globalAlpha = a * .95 * clamp((t - .4) / .7, 0, 1) * (t < 1.1 ? .75 + .25 * Math.sin(t * 38) : 1);
-    const ey = cy - R * .3, ex = R * .43;
+    const ey = cy - R * .3, ex = R * .44;
+    // curved horns rising out of the dark
+    ctx.fillStyle = '#060004'; ctx.strokeStyle = 'rgba(255,40,30,.4)'; ctx.lineWidth = 2;
     for (const s of [-1, 1]) {
-      ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(s * .32);
-      ctx.shadowColor = '#ff3b2e'; ctx.shadowBlur = 34;
-      const eg = ctx.createRadialGradient(0, 0, 2, 0, 0, R * .22); eg.addColorStop(0, '#fff2a0'); eg.addColorStop(.55, '#ffb21e'); eg.addColorStop(1, '#ff2a1a');
-      ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(0, 0, R * .21, R * .13 * (.25 + .75 * open), 0, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0; ctx.fillStyle = '#1a0000'; ctx.beginPath(); ctx.ellipse(0, 0, R * .035, R * .12 * open, 0, 0, TAU); ctx.fill();
-      ctx.strokeStyle = '#000'; ctx.lineWidth = R * .06; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-s * R * .26, -R * .2 * open); ctx.lineTo(s * R * .24, -R * .02 * open - R * .02); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + s * R * .4, cy - R * .6);
+      ctx.quadraticCurveTo(cx + s * R * .86, cy - R * .62, cx + s * R * .6, cy - R * 1.08);
+      ctx.quadraticCurveTo(cx + s * R * .58, cy - R * .8, cx + s * R * .16, cy - R * .7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    const pulse = .8 + .2 * Math.sin(t * 9);
+    for (const s of [-1, 1]) {
+      const w = R * .26, hh = R * .17 * open, n = -s;   // n = direction of the inner corner
+      ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(-s * .42);
+      ctx.shadowColor = '#ff1a0a'; ctx.shadowBlur = 46 * pulse;
+      const eg = ctx.createRadialGradient(0, 0, 1, 0, 0, w);
+      eg.addColorStop(0, '#fff6c0'); eg.addColorStop(.28, '#ffcf2e'); eg.addColorStop(.62, '#ff2a10'); eg.addColorStop(1, '#5a0000');
+      ctx.fillStyle = eg; ctx.beginPath(); ctx.moveTo(-w, 0);
+      ctx.quadraticCurveTo(0, -hh * .55, w, 0); ctx.quadraticCurveTo(0, hh * 1.15, -w, 0); ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0;
+      // blood-red veins creeping in from the corners
+      ctx.strokeStyle = 'rgba(110,0,0,.75)'; ctx.lineWidth = Math.max(1, R * .008);
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(-w * .96, k * hh * .1); ctx.lineTo(-w * .5, k * hh * .38); ctx.moveTo(w * .96, k * hh * .1); ctx.lineTo(w * .5, k * hh * .38); ctx.stroke(); }
+      // thin vertical slit pupil
+      ctx.fillStyle = '#080000'; ctx.beginPath(); ctx.ellipse(0, hh * .1, R * .026, hh * .78, 0, 0, TAU); ctx.fill();
+      // heavy angry brow slammed over the top of the eye
+      ctx.fillStyle = '#000'; ctx.beginPath();
+      ctx.moveTo(-n * w * 1.35, -hh * 2.1); ctx.lineTo(n * w * 1.2, -hh * .15);
+      ctx.lineTo(n * w * 1.2, hh * .12); ctx.lineTo(-n * w * 1.3, -hh * .95); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
     // mouth + teeth: only appear out of the black as it roars
@@ -1012,7 +1055,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const N = 9;
     for (let i = 0; i < N; i++) {
       const u = (i + .5) / N * 2 - 1, x = cx + u * mw / 2 * .9, k = Math.sqrt(Math.max(0, 1 - u * u * .81));
-      const tw = mw / N * .52, tl = R * (.07 + .09 * roar) * (.7 + .5 * k);
+      const tw = mw / N * .52, tl = R * (.07 + .09 * roar) * (.7 + .5 * k) * ((i === 1 || i === N - 2) ? 1.9 : 1);
       const ty = mcy - (mh / 2) * k, by = mcy + (mh / 2) * k;
       ctx.beginPath(); ctx.moveTo(x - tw, ty); ctx.lineTo(x + tw, ty); ctx.lineTo(x, ty + tl); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x - tw, by); ctx.lineTo(x + tw, by); ctx.lineTo(x, by - tl * .85); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1519,7 +1562,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       champion = w; championName = w.name;
       $('winname').textContent = w.name;
       $('winsub').textContent = Math.round(scoreOf(w)).toLocaleString() + ' points' + (finalRound ? ' · winner of everything' : ' · scores carry over');
-      $('winbig').classList.add('on'); confetti(); fwVidPlay(winMs);
+      $('winbig').classList.add('on'); wgiftStart(); confetti(); fwVidPlay(winMs);
       ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
       sfx.horn(); shake(3);
       if (STUDIO) {
@@ -1540,7 +1583,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       $('winkick').textContent = 'ROUND OVER';
       $('winname').textContent = 'No champion yet';
       $('winsub').textContent = 'Comment, like or share to join the next round!';
-      $('winbig').classList.add('on');
+      $('winbig').classList.add('on'); wgiftStart();
       setTimeout(() => { $('winbig').classList.remove('on'); nextUp(); }, Math.min(4000, winMs));
     }
   }
@@ -1556,6 +1599,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function startRound() {
     shrinkStop(true);
+    wgiftStop();
     round.reset = true;
     round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false; round.monsterDone = false;
     showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
@@ -1688,6 +1732,33 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (coins >= 100) { spot = { p, t: 2.6 }; startNuke(p); spark(p.x, p.y, '#fff', 40, 320, 1); }
     if (coins >= 1000) startMeteors(p, 5 + tier * 2);
     if (shipMode) shipSalvo(p, coins >= 100 ? 18 : Math.min(9, 2 + Math.floor(coins / 8)), coins >= 100);
+    if (round.phase === 'play') { const add = Math.min(coins, 60); round.t += add; round.len += add; floater(p.x, p.y - p.r - 30, '+' + add + 's ⏱', '#ffe27a', 16); }
+    if (coins >= 20) giftAssist(p, coins, tier);   // 20+ coin gift: strike whichever enemy is nearest to the gifter's fighter
+  }
+  function giftAssist(p, coins, tier) {
+    if (!p.alive) return;
+    let target = null, best = Infinity;
+    for (const q of aliveList()) {
+      if (q === p) continue;
+      const d = Math.hypot(q.x - p.x, q.y - p.y);
+      if (d < best) { best = d; target = q; }
+    }
+    if (!target) return;
+    const dmg = Math.max(2, target.points * Math.min(.22, .05 + tier * .03) + coins * .12);
+    const dx = target.x - p.x, dy = target.y - p.y, d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
+    const c = 'hsl(' + p.hue + ',100%,70%)';
+    sfx.laser();
+    for (let i = 0; i < 10; i++) {
+      const u = i / 9, bx = p.x + nx * best * u, by = p.y + ny * best * u;
+      setTimeout(() => spark(bx, by, c, 2, 60, .25), i * 12);
+    }
+    setTimeout(() => {
+      if (!target.alive) return;
+      ring(target.x, target.y, c, target.r + 30, .5, 3); spark(target.x, target.y, '#fff', 14, 220, .6);
+      floater(target.x, target.y - target.r - 10, p.name + "'s backup!", c, 13);
+      shake(1 + tier);
+      hurt(target, dmg, p, 'gift');
+    }, best / 9);
   }
   window.TapArena = { event: e => handleMsg(e), join: name => joinPlayer(String(name).slice(0, 16)) };
 
