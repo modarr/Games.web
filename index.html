@@ -1077,7 +1077,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
   const ROUND_SECS = STUDIO ? CFG.roundSecsStudio : CFG.roundSecs;
   const PLAN_Q = (Q.get('plan') || '').split(',').map(Number).filter(n => n >= 20).slice(0, 6);
-  const SESSION_PLAN = PLAN_Q.length ? PLAN_Q : [180, 120, 60];   // 3 rounds: 3 min, 2 min, 1 min. Points carry over; scores reset after the last round
+  let SESSION_PLAN = PLAN_Q.length ? PLAN_Q : [180, 120, 60];
+  const DEFAULT_PLAN = SESSION_PLAN.slice();   // 3 rounds: 3 min, 2 min, 1 min. Points carry over; scores reset after the last round
   const planLen = n => SESSION_PLAN[(n - 1) % SESSION_PLAN.length];
   const round = { t: planLen(1), len: planLen(1), phase: 'play', num: 1, calledHalf: false, called30: false };
   function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -1256,7 +1257,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   // between rounds: scores CARRY OVER. Only after the last round of the session do scores reset for everyone.
   function betweenRounds() {
-    if (round.sessionDone) { round.sessionDone = false; round.num = 0; resetBoard(); return; }
+    if (round.sessionDone) { round.sessionDone = false; round.num = 0; SESSION_PLAN = DEFAULT_PLAN.slice(); resetBoard(); return; }   // back to the normal 3-round format
     purgeIdle(CFG.idleRoundReset); purgeInactive(CFG.resetActiveSecs);
     for (const p of players) if (p.alive) { p.shield = Math.max(p.shield || 0, 4); p.graceT = Math.max(p.graceT || 0, 4); p.pulse = 1; }
     showCard('SCORES CARRY OVER', 'ROUND ' + (round.num + 1) + ' NEXT', 2200, 'fresh'); sfx.crown();
@@ -1265,13 +1266,23 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     shrinkStop(true);
     if (!round.reset) { round.reset = true; betweenRounds(); }
     round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false;
-    showCard(round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
+    showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
     showMotiv('⚔️ Round ' + round.num + ' has begun!');
     feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
 
 
   window.__endRound = () => { if (round.phase === 'play') endRound(); };
+  // host command #1x1: quick match = ONE round of 1 minute, one winner, then a full score reset and back to the normal 3-round format
+  window.__fxQuick = () => {
+    shrinkStop(true);
+    SESSION_PLAN = [60]; round.sessionDone = false; round.num = 0; round.reset = true; round.cdn = 0;
+    round.phase = 'gap'; round.t = 0.4;
+    try { $('winbig').classList.remove('on'); } catch (err) {}
+    resetBoard();
+    feed('⚡ Quick match: 1 minute, one winner!', 'gift');
+    return 'quick';
+  };
 
   /* ---------- Events (public API) ---------- */
   function addPoints(p, n) { p.points += n; p.pulse = 1; }
@@ -3102,6 +3113,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   window.__fxChat = (e, who) => {
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
+    if (/^\s*#?\s*1\s*x\s*1\s*$/i.test(txt)) { if (window.__fxQuick) window.__fxQuick(); return; }
     const rank2 = txt.match(/#\s*(0[123]|[123]{2})\s*$/);
     if (rank2) { const d = rank2[1]; window.__fxShout(d[0] === '0' ? 'gift' : 'score', Number(d[1]), ''); return; }
     const so0101 = txt.match(/#\s*0101\s+(\S+)\s*(.*)/i);
