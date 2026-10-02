@@ -2905,6 +2905,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   window.__fxChat = (e, who) => {
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
+    const rank2 = txt.match(/#\s*(0[123]|[123]{2})\s*$/);
+    if (rank2) { const digits = rank2[1]; const n = Number(digits[1]); const t = digits[0] === '0' ? topByGift(n) : topByScore(n); if (t) doShoutout(t); return; }
+    const so0101 = txt.match(/#\s*0101\s+(\S+)\s*(.*)/i);
+    if (so0101) { const t = findPlayerByName(so0101[1]); if (t) doShoutout(t, so0101[2]); return; }
     const zero = txt.match(/#\s*(0{1,4})\b/);
     if (zero) { fxAutoToggle(zero[1].length); return; }
     const hash = txt.match(/#\s*([1-6])\b/);
@@ -2913,7 +2917,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (sor) { const digits = sor[1]; const n = Number(digits[0]); const t = digits.length === 2 ? topByGift(n) : topByScore(n); if (t) doShoutout(t, sor[2]); return; }
     const so = txt.match(/#?\s*shoutout\s+(\S+)\s*(.*)/i);
     if (so) { const t = findPlayerByName(so[1]); if (t) doShoutout(t, so[2]); return; }
-    const gf = txt.match(/#?\s*gift\s*(\d+)\s+(\S+)/i);
+    const gf = txt.match(/#?\s*(?:gift\s*)?(\d{2,})\s+(\S+)/i);
     if (gf) { const t = findPlayerByName(gf[2]); if (t) { addPoints(t, Number(gf[1])); floater(t.x, t.y - t.r - 10, '+' + gf[1], '#ffd23f', 18); ring(t.x, t.y, '#ffd23f', t.r + 40, .5, 3); } return; }
     for (const [re, kind] of WORDS) if (re.test(txt)) { fxPlay(kind, 1); return; }
   };
