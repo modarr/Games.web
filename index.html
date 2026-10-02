@@ -669,6 +669,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(v, s + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
     o.connect(g); g.connect(master); o.start(s); o.stop(s + d + 0.03);
   }
+  function swoosh(t, d, v, f1, f2, q) {   // bandpass noise with the filter sweeping fast = a "whoosh"
+    if (!ac || !noiseBuf || ac.state !== 'running') return;
+    const s = ac.currentTime + t;
+    const src = ac.createBufferSource(); src.buffer = noiseBuf;
+    const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q || 1.1;
+    f.frequency.setValueAtTime(f1, s); f.frequency.exponentialRampToValueAtTime(f2, s + d);
+    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(v, s + d * .32); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+    src.connect(f); f.connect(g); g.connect(master); src.start(s); src.stop(s + d + 0.02);
+  }
   function noise(t, d, v, freq, q) {
     if (!ac || !noiseBuf || ac.state !== 'running') return;
     const s = ac.currentTime + t;
@@ -708,7 +717,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     hit(dmg)  { if (!ok('hit', 220)) return; const f = 650 + rf(0, 220) + Math.min(dmg, 20) * 6; tone(f, 0, .06, 'sine', .032, f * .8); noise(0, .025, .03, 2800, 1.6); },
     clash()   { if (!ok('clash', 320)) return; tone(1400, 0, .08, 'sine', .03, 1050); noise(0, .02, .025, 5000, 1.6); },
     bump()    { if (!ok('bump', 260)) return; tone(170, 0, .06, 'sine', .06, 65); },
-    chop()    { if (!ok('chop', 140)) return; noise(0, .05, .4, 2600, 2.4); tone(1800, 0, .05, 'sawtooth', .18, 500); tone(90, 0, .07, 'sine', .3, 40); },
+    chop()    { if (!ok('chop', 140)) return;
+      swoosh(0, .09, .22, 1200, 5200, 1.3);                               // fast whoosh of the blade through the air
+      noise(.085, .055, .42, 3400, 3.2); tone(2600, .085, .035, 'sine', .12, 1200);   // crisp wet "shk" as it slices through
+      noise(.1, .09, .16, 900, 1.4);                                      // soft pulpy tail
+      tone(90, .1, .09, 'sine', .22, 40);                                 // light low thud for weight
+    },
     pop()     { noise(0, .16, .4, 1800, .8); tone(600, 0, .18, 'sine', .32, 120); tone(1200, 0, .07, 'triangle', .12, 2000); tone(2400, .03, .05, 'sine', .06); },
     whistle() { if (!ok('wh', 120)) return; tone(900, 0, .6, 'sine', .08, 300); },
     boom(big) { noise(0, big ? .8 : .45, big ? .8 : .55, big ? 160 : 260, .5); tone(big ? 60 : 95, 0, big ? .9 : .5, 'sine', big ? .6 : .45, 28); },
@@ -912,6 +926,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     for (let i = 0; i < n && parts.length < (STUDIO ? 320 : 800); i++) {
       const a = rf(0, TAU), s = rf(.25, 1) * speed;
       parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rf(.5, 1) * (life || .6), max: life || .6, color, size: rf(1.5, 3.6) });
+    }
+  }
+  function weldSpark(x, y, nx, ny, n) {   // hot metal-cutting sparks: streak fast along the slice, arc with gravity, flicker hot-white to orange
+    const baseA = Math.atan2(ny, nx);
+    for (let i = 0; i < (n || 14) && parts.length < (STUDIO ? 320 : 800); i++) {
+      const a = baseA + rf(-.9, .9), s = rf(180, 520);
+      const hot = Math.random() < .4;
+      parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - rf(0, 80), life: 0, max: 1, color: hot ? '#fffce0' : (Math.random() < .5 ? '#ffb347' : '#ff6a1a'), size: rf(1.6, 3.2), weld: true });
+      const q = parts[parts.length - 1]; q.max = rf(.3, .7); q.life = q.max;
     }
   }
   function ring(x, y, color, max, life, width) { rings.push({ x, y, max, life, t: 0, color, width }); }
@@ -1330,6 +1353,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ring(p.x, p.y, '#ffd23f', p.r + 30 + tier * 16, .6, 3);
     spark(p.x, p.y, '#ffd23f', 10 + tier * 10, 200 + tier * 35, .9);
     spark(p.x, p.y, c, 8 + tier * 6, 180, .8);
+    if (coins >= 100) {   // big gift (100+ coins): welder-style spark shower all around + the slicing "chop" sound
+      sfx.chop();
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; weldSpark(p.x + Math.cos(a) * p.r, p.y + Math.sin(a) * p.r, Math.cos(a), Math.sin(a), 14); }
+    }
     if (tier <= 3) for (let i = 0; i < 3; i++) setTimeout(() => floater(p.x + rf(-14, 14), p.y - p.r, i % 2 ? '💖' : '🌹', '#fff', 22), i * 160);
     floater(p.x, p.y - p.r - 12, '+' + addB + ' ⚔', '#35e0ff', 18 + tier * 2);
     sfx.gift(tier);
@@ -1546,7 +1573,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     b.vx += nx * 140 * m; b.vy += ny * 140 * m; a.vx -= nx * 50 * (1 - m); a.vy -= ny * 50 * (1 - m);
     spark(cx, cy, 'hsl(' + b.hue + ',100%,75%)', 7, 230, .4); spark(cx, cy, '#fff', 4, 260, .25);
     const shiny = isShinyBlade(a) || isShinyBlade(b);
-    if (shiny) sfx.chop();
+    if (shiny) { sfx.chop(); weldSpark(cx, cy, nx, ny, 16); weldSpark(cx, cy, -nx, -ny, 10); flash = Math.max(flash, .12); }
     if (b.blades > 0) sfx.clash(); sfx.hit(dmg);
     if (dmg > 15) shake(2);
     hurt(b, dmg, a, 'blade');
@@ -1767,7 +1794,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     for (let i = parts.length - 1; i >= 0; i--) {
       const q = parts[i]; q.life -= dt;
       if (q.life <= 0) { parts.splice(i, 1); continue; }
-      q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= .96; q.vy = q.vy * .96 + 60 * dt;
+      q.x += q.vx * dt; q.y += q.vy * dt; if (q.weld) { q.vx *= .9; q.vy = q.vy * .9 + 340 * dt; } else { q.vx *= .96; q.vy = q.vy * .96 + 60 * dt; }
     }
     for (let i = rings.length - 1; i >= 0; i--) { rings[i].t += dt; if (rings[i].t >= rings[i].life) rings.splice(i, 1); }
     for (let i = floats.length - 1; i >= 0; i--) { floats[i].t += dt; if (floats[i].t >= 1) floats.splice(i, 1); }
@@ -2033,7 +2060,20 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.save(); ctx.rotate(-time * 1.8); ctx.setLineDash([5, 7]); ctx.lineWidth = 3; ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 20;
       ctx.strokeStyle = 'rgba(255,215,80,.95)'; ctx.beginPath(); ctx.arc(0, 0, r + 10, 0, TAU); ctx.stroke(); ctx.restore();
     }
-    ctx.beginPath(); ctx.ellipse(-r * .32, -r * .5, r * .28, r * .13, -.6, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fill();
+    // --- 3D glass-sphere shading: rim shadow (ambient occlusion), bottom bounce light, big soft gloss, tight hot specular ---
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+    const rim = ctx.createRadialGradient(0, 0, r * .62, 0, 0, r);
+    rim.addColorStop(0, 'rgba(0,0,0,0)'); rim.addColorStop(.75, 'rgba(0,0,0,.1)'); rim.addColorStop(1, 'rgba(0,0,0,.5)');
+    ctx.fillStyle = rim; ctx.fillRect(-r, -r, 2 * r, 2 * r);
+    const bounce = ctx.createRadialGradient(r * .38, r * .55, 0, r * .38, r * .55, r * .6);
+    bounce.addColorStop(0, 'hsla(' + hue + ',' + sat + ',75%,.16)'); bounce.addColorStop(1, 'hsla(' + hue + ',' + sat + ',75%,0)');
+    ctx.fillStyle = bounce; ctx.fillRect(-r, -r, 2 * r, 2 * r);
+    ctx.restore();
+    ctx.beginPath(); ctx.ellipse(-r * .34, -r * .48, r * .62, r * .42, -.55, 0, TAU);
+    const gloss = ctx.createRadialGradient(-r * .34, -r * .48, 0, -r * .34, -r * .48, r * .62);
+    gloss.addColorStop(0, 'rgba(255,255,255,.30)'); gloss.addColorStop(.6, 'rgba(255,255,255,.1)'); gloss.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gloss; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-r * .4, -r * .56, r * .16, r * .09, -.6, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
 
     if (p.shield > 0) {
       ctx.save(); ctx.setLineDash([6, 5]); ctx.lineDashOffset = -time * 30; ctx.lineWidth = 2.5;
@@ -2176,6 +2216,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     ctx.save(); if (!NOFX) ctx.globalCompositeOperation = 'lighter';
     for (const q of parts) {
       const pa = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.color;
+      if (q.weld) {
+        const sp = Math.hypot(q.vx, q.vy);
+        if (!NOFX) { ctx.globalAlpha = pa * .35; ctx.beginPath(); ctx.arc(q.x, q.y, q.size * 2.2, 0, TAU); ctx.fill(); }
+        ctx.globalAlpha = pa; ctx.strokeStyle = q.color; ctx.lineWidth = q.size * .9; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x - q.vx * .018, q.y - q.vy * .018); ctx.stroke();
+        continue;
+      }
       if (!NOFX) { ctx.globalAlpha = pa * .25; ctx.beginPath(); ctx.arc(q.x, q.y, q.size * 2.6, 0, TAU); ctx.fill(); }
       ctx.globalAlpha = pa;
       ctx.beginPath(); ctx.arc(q.x, q.y, q.size, 0, TAU); ctx.fill();
