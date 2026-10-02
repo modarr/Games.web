@@ -70,7 +70,7 @@ body.overlay #mute,body.overlay #self{opacity:0;transition:opacity .2s}
 body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visible,body.overlay #self:focus-visible{opacity:1}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-#lb{position:absolute;left:calc(var(--u)*3);bottom:calc(var(--u)*3);z-index:20;pointer-events:none;width:calc(var(--u)*44)}
+#lb{position:absolute;left:calc(var(--u)*3);top:calc(var(--u)*17);z-index:20;pointer-events:none;width:calc(var(--u)*44)}
 #lb .hd{font-family:var(--display);font-size:calc(var(--u)*3.6);color:var(--cyan);margin-bottom:calc(var(--u)*1.2);text-shadow:0 0 calc(var(--u)*2) rgba(53,224,255,.5),0 1px 3px rgba(0,0,0,.9)}
 #lb .row{display:flex;align-items:center;gap:calc(var(--u)*1.4);font-size:calc(var(--u)*3.3);font-weight:700;line-height:1.5;text-shadow:0 1px 3px rgba(0,0,0,.9)}
 #lb .dot{width:calc(var(--u)*2.6);height:calc(var(--u)*2.6);border-radius:50%;flex:none}
@@ -83,8 +83,8 @@ body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visib
 #gear{right:calc(var(--u)*15)}
 .rbtn:focus-visible,#start:focus-visible,#panel button:focus-visible,#panel input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 
-#feed{position:absolute;left:calc(var(--u)*3);bottom:calc(var(--u)*26);z-index:20;pointer-events:none;display:flex;flex-direction:column-reverse;gap:calc(var(--u)*.6);width:calc(var(--u)*58)}
-#feed .fi{font-size:calc(var(--u)*2.3);font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.95);animation:fi 7s forwards;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#feed{position:absolute;left:calc(var(--u)*22);bottom:16%;z-index:20;pointer-events:none;display:flex;flex-direction:column;gap:calc(var(--u)*1);width:calc(var(--u)*50)}
+#feed .fi{font-size:calc(var(--u)*2.8);font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.95);animation:fi 7s forwards;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #feed .fi.kill{color:#ff8fb3}
 #feed .fi.gift{color:var(--gold)}
 #feed .fi.join{color:var(--cyan)}
@@ -2115,7 +2115,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   if (FILL_ON) {
     const start = [1];
-    const PERM = STUDIO ? [{ name: 'chillax', flag: 'ps' }, { name: 'Saudi Arabia', flag: 'sa', dbl: true }, { name: 'Kuwait', flag: 'kw' }, { name: 'Qatar', flag: 'qa' }] : [];
+    const PERM = STUDIO ? [{ name: 'chillax', flag: 'ps' }, { name: 'dune.rider7', flag: 'sa', dbl: true }, { name: 'lulu_x3', flag: 'kw' }, { name: 'sky_falcon', flag: 'qa' }] : [];
     PERM.forEach((who, i) => setTimeout(() => { const b = spawnFiller(1, 30, who.name, who.flag); if (b) { b.permanent = true; if (who.dbl) b.permanentDbl = true; } }, 250 + i * 160));
     for (let i = PERM.length; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
     setTimeout(() => { fillReady = true; }, 250 + FILL_N * 160 + 150);
@@ -2141,43 +2141,55 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const hostP = () => roster.get('chillax');
     const cds = {};
     const ACTS = [
-      { k: 'dbl', t: '×2', n: 'DOUBLE', cd: 20, fn: h => { h.dbl = 12; h.glow = 12; h.shield = Math.max(h.shield, 1); banner('×2 POWER!', '12 seconds', 'big', 2.2); ring(h.x, h.y, '#ffd23f', h.r + 90, .8, 6); spark(h.x, h.y, '#ffd23f', 34, 300, .9); sfx.gift(3); } },
-      { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: h => { h.lightning++; if (!zap(h, aliveList())) h.lightning--; } },
-      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: h => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); const key = h.key; for (let i = 0; i < 7; i++) setTimeout(() => { const q = roster.get(key); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
-      { k: 'rev', t: '🔥', n: 'REVENGE', cd: 7, fn: h => {
+      { k: 'dbl', t: '×2', n: 'DOUBLE', cd: 20, fn: (h, pw = 1) => { h.dbl = 12 * pw; h.glow = 12 * pw; h.shield = Math.max(h.shield, 1); banner('×2 POWER!', Math.round(12 * pw) + ' seconds', 'big', 2.2); ring(h.x, h.y, '#ffd23f', h.r + 90, .8, 6); spark(h.x, h.y, '#ffd23f', 34, 300, .9); sfx.gift(3); } },
+      { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: (h, pw = 1) => { const n = Math.max(1, Math.round(pw)); for (let i = 0; i < n; i++) setTimeout(() => { if (!h.alive) return; h.lightning++; if (!zap(h, aliveList())) h.lightning--; }, i * 400); } },
+      { k: 'storm', t: '🌪', n: 'STORM', cd: 14, fn: (h, pw = 1) => { banner('🌪 STORM!', 'hold on…', 'big', 2.4); const key = h.key; for (let i = 0; i < Math.round(7 * pw); i++) setTimeout(() => { const q = roster.get(key); if (q && q.alive) { q.lightning++; if (!zap(q, aliveList())) q.lightning--; } }, i * 800); } },
+      { k: 'rev', t: '🔥', n: 'REVENGE', cd: 7, fn: (h, pw = 1) => {
         let t = h.lastAtk && h.lastAtk.alive && h.lastAtk !== h ? h.lastAtk : aliveList().filter(q => q !== h).sort((a, b) => b.points - a.points)[0];
         if (!t) return; banner('🔥 REVENGE!', t.name, 'big', 2.4); ring(h.x, h.y, '#ff5c2a', h.r + 80, .7, 6); shake(5);
-        for (let i = 0; i < 5; i++) setTimeout(() => { if (!t.alive) return; bombs.push({ sx: h.x, sy: h.y, tx: clamp(t.x + rf(-26, 26), ARENA.x0 + 10, ARENA.x1 - 10), ty: clamp(t.y + rf(-26, 26), ARENA.y0 + 10, ARENA.y1 - 10), t: 0, dur: .55, owner: h }); }, 250 + i * 200);
-        for (let i = 0; i < 3; i++) setTimeout(() => { if (!t.alive) return; meteors.push({ x: clamp(t.x + rf(-24, 24), ARENA.x0 + 20, ARENA.x1 - 20), y: clamp(t.y + rf(-24, 24), ARENA.y0 + 20, ARENA.y1 - 20), t: 0, fall: .6, owner: h }); }, 1400 + i * 220);
+        for (let i = 0; i < Math.round(5 * pw); i++) setTimeout(() => { if (!t.alive) return; bombs.push({ sx: h.x, sy: h.y, tx: clamp(t.x + rf(-26, 26), ARENA.x0 + 10, ARENA.x1 - 10), ty: clamp(t.y + rf(-26, 26), ARENA.y0 + 10, ARENA.y1 - 10), t: 0, dur: .55, owner: h }); }, 250 + i * 200);
+        for (let i = 0; i < Math.round(3 * pw); i++) setTimeout(() => { if (!t.alive) return; meteors.push({ x: clamp(t.x + rf(-24, 24), ARENA.x0 + 20, ARENA.x1 - 20), y: clamp(t.y + rf(-24, 24), ARENA.y0 + 20, ARENA.y1 - 20), t: 0, fall: .6, owner: h }); }, 1400 + i * 220);
         h.lastAtk = null; } },
-      { k: 'fw', t: '🎆', n: 'FIREWORKS', cd: 2, fn: h => {
-        const foes = aliveList().filter(q => q !== h).sort(() => Math.random() - .5).slice(0, 5);
-        foes.forEach((v, i) => setTimeout(() => { if (!v.alive) return; const hue = ri(0, 359); spark(v.x, v.y, 'hsl(' + hue + ',100%,68%)', 26, 270, 1.1); ring(v.x, v.y, 'hsl(' + hue + ',100%,70%)', 70, .5, 3); sfx.gift(2); if (v.shield <= 0) hurt(v, (7 + v.points * .03) * mult(h), h, 'zap'); }, i * 150));
+      { k: 'fw', t: '🎆', n: 'FIREWORKS', cd: 2, fn: (h, pw = 1) => {
+        const foes = aliveList().filter(q => q !== h).sort(() => Math.random() - .5).slice(0, Math.round(5 * pw));
+        foes.forEach((v, i) => setTimeout(() => { if (!v.alive) return; const hue = ri(0, 359); spark(v.x, v.y, 'hsl(' + hue + ',100%,68%)', 26, 270, 1.1); ring(v.x, v.y, 'hsl(' + hue + ',100%,70%)', 70, .5, 3); sfx.gift(2); if (v.shield <= 0) hurt(v, (7 + v.points * .03) * mult(h) * pw, h, 'zap'); }, i * 150));
         h.points += 8; h.pulse = 2; } },
-      { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: h => { h.shield = Math.max(h.shield, 5); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
+      { k: 'sh', t: '🛡', n: 'SHIELD', cd: 14, fn: (h, pw = 1) => { h.shield = Math.max(h.shield, 5 * pw); ring(h.x, h.y, '#9fe8ff', h.r + 60, .6, 5); sfx.gift(1); } }
     ];
     // small gifts also trigger these same actions, for whichever viewer sent the gift
     const giftCds = {};
-    const GIFT_ACT = { 1: 'strike', 5: 'sh', 20: 'storm', 30: 'fw', 50: 'dbl', 100: 'rev' };
+    const GIFT_TIERS = [[1, 'strike'], [5, 'sh'], [20, 'storm'], [30, 'fw'], [50, 'dbl'], [100, 'rev']];
+    const HUGE_GIFT = 500;   // this many coins or more fires every power at once
     const GIFT_LABEL = { strike: ['🌹', 'Rose', 1], sh: ['🫰', 'Finger Heart', 5], storm: ['🧴', 'Perfume', 20], fw: ['🍩', 'Doughnut', 30], dbl: ['🎁', '50-coin gift', 50], rev: ['🫶', 'Hand Hearts', 100] };
     window.__studioGiftAction = (p, coins) => {
-      const key = GIFT_ACT[coins]; if (!key) return;
-      const a = ACTS.find(x => x.k === key); if (!a) return;
+      if (!p || !p.alive) return;
+      if (coins >= HUGE_GIFT) {
+        const pw = Math.min(3, 1 + Math.log10(coins / HUGE_GIFT) * 1.5);
+        try { banner('💥 ' + String(p.name).toUpperCase(), coins.toLocaleString() + ' coins → EVERYTHING!', 'mega', 4.6); } catch (e) {}
+        try { feed('💥 ' + p.name + ' sent ' + coins.toLocaleString() + ' coins → ALL POWERS!', 'gift'); } catch (e) {}
+        try { giftPop(p, coins.toLocaleString() + ' coins'); } catch (e) {}
+        ACTS.forEach((a, i) => setTimeout(() => { if (p.alive) { try { a.fn(p, pw); } catch (e) {} } }, i * 700));
+        return;
+      }
+      let tier = null; GIFT_TIERS.forEach(t => { if (coins >= t[0]) tier = t; });
+      if (!tier) return;
+      const key = tier[1], a = ACTS.find(x => x.k === key); if (!a) return;
+      const pw = Math.min(3, 1 + Math.log2(Math.max(1, coins / tier[0])) * 0.6);
       const now = performance.now() / 1000, ck = key + ':' + p.key;
       if ((giftCds[ck] || 0) > now) return;
-      giftCds[ck] = now + a.cd; a.fn(p);
-      const L = GIFT_LABEL[key];
-      try { banner(L[0] + ' ' + String(p.name).toUpperCase(), L[1] + ' → ' + a.n + '!', 'big', 2.6); } catch (e) {}
-      try { feed(L[0] + ' ' + p.name + ' sent ' + L[1] + ' → ' + a.n + '!', 'gift'); } catch (e) {}
-      try { giftPop(p, L[1]); } catch (e) {}
+      giftCds[ck] = now + a.cd; a.fn(p, pw);
+      const L = GIFT_LABEL[key], big = pw >= 1.3 ? ' ×' + pw.toFixed(1) : '';
+      try { banner(L[0] + ' ' + String(p.name).toUpperCase(), coins + ' coins → ' + a.n + big + '!', 'big', 2.6); } catch (e) {}
+      try { feed(L[0] + ' ' + p.name + ' sent ' + coins + ' coins → ' + a.n + big + '!', 'gift'); } catch (e) {}
+      try { giftPop(p, coins + ' coins'); } catch (e) {}
     };
     const bar = document.createElement('div');
-    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:90;display:flex;gap:1vw;padding:1vw;box-sizing:border-box;background:linear-gradient(transparent,rgba(5,0,25,.85) 35%);pointer-events:auto';
+    bar.style.cssText = 'position:absolute;left:calc(var(--u)*1.5);top:calc(var(--u)*40);width:calc(var(--u)*21);margin-top:calc(var(--u)*1.2);z-index:25;display:flex;flex-direction:column;gap:calc(var(--u)*.9);box-sizing:border-box;pointer-events:none';
     ACTS.forEach((a, i) => {
       const b = document.createElement('button');
-      b.style.cssText = 'flex:1 1 0;min-width:0;font:700 min(4.6vw,2.6vh) system-ui;color:#fff;background:rgba(20,10,50,.85);border:.5vw solid #35e0ff;border-radius:2.2vw;padding:1.8vw 0;cursor:pointer;line-height:1.15';
+      b.style.cssText = 'width:100%;min-width:0;pointer-events:auto;font:700 calc(var(--u)*3.2) system-ui;color:#fff;background:rgba(20,10,50,.85);border:calc(var(--u)*.4) solid #35e0ff;border-radius:calc(var(--u)*1.6);padding:calc(var(--u)*.9) 0;cursor:pointer;line-height:1.15';
       const gl = GIFT_LABEL[a.k];
-      b.innerHTML = a.t + '<div style="font-size:.46em;opacity:.9">' + a.n + '</div><div style="font-size:.5em;margin-top:.2em;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '🪙</div>';
+      b.innerHTML = a.t + '<div style="font-size:.46em;opacity:.9">' + a.n + '</div><div style="font-size:.5em;margin-top:.2em;color:#ffd23f">' + gl[0] + ' ' + gl[2] + '+🪙</div>';
       const fire = () => {
         const h = hostP(), now = performance.now() / 1000;
         if (!h || !h.alive || (cds[a.k] || 0) > now) return;
@@ -2188,7 +2200,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       document.addEventListener('keydown', e => { if (e.key === String(i + 1) && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) fire(); });
       bar.appendChild(b);
     });
-    document.body.appendChild(bar);
+    document.getElementById('game').appendChild(bar);
+    // keep the button list right under the top-3 board; push the gift guide below it
+    const legEl = document.getElementById('legend');
+    const syncBar = () => {
+      const lb = document.getElementById('lb'); if (!lb) return;
+      bar.style.top = (lb.offsetTop + lb.offsetHeight) + 'px';
+      if (legEl) { legEl.style.top = (bar.offsetTop + bar.offsetHeight) + 'px'; legEl.style.marginTop = 'calc(var(--u)*1.5)'; }
+    };
+    setInterval(syncBar, 250); syncBar();
 
     // host-only chat trigger: #1..#6 fire the same six moves as the buttons below
     window.__fxAction = n => {
