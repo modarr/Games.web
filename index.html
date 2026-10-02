@@ -70,7 +70,7 @@ body.overlay #mute,body.overlay #self{opacity:0;transition:opacity .2s}
 body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visible,body.overlay #self:focus-visible{opacity:1}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-#lb{position:absolute;left:calc(var(--u)*3);top:calc(var(--u)*17);z-index:20;pointer-events:none;width:calc(var(--u)*44)}
+#lb{position:absolute;left:calc(var(--u)*3);bottom:calc(var(--u)*3);z-index:20;pointer-events:none;width:calc(var(--u)*44)}
 #lb .hd{font-family:var(--display);font-size:calc(var(--u)*3.6);color:var(--cyan);margin-bottom:calc(var(--u)*1.2);text-shadow:0 0 calc(var(--u)*2) rgba(53,224,255,.5),0 1px 3px rgba(0,0,0,.9)}
 #lb .row{display:flex;align-items:center;gap:calc(var(--u)*1.4);font-size:calc(var(--u)*3.3);font-weight:700;line-height:1.5;text-shadow:0 1px 3px rgba(0,0,0,.9)}
 #lb .dot{width:calc(var(--u)*2.6);height:calc(var(--u)*2.6);border-radius:50%;flex:none}
@@ -83,17 +83,18 @@ body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visib
 #gear{right:calc(var(--u)*15)}
 .rbtn:focus-visible,#start:focus-visible,#panel button:focus-visible,#panel input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 
-#feed{position:absolute;left:calc(var(--u)*3);bottom:16%;z-index:20;pointer-events:none;display:flex;flex-direction:column;gap:calc(var(--u)*1);width:calc(var(--u)*72)}
-#feed .fi{font-size:calc(var(--u)*3.2);font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.95);animation:fi 7s forwards;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#feed{position:absolute;left:calc(var(--u)*3);bottom:calc(var(--u)*26);z-index:20;pointer-events:none;display:flex;flex-direction:column-reverse;gap:calc(var(--u)*.6);width:calc(var(--u)*58)}
+#feed .fi{font-size:calc(var(--u)*2.3);font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.95);animation:fi 7s forwards;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #feed .fi.kill{color:#ff8fb3}
 #feed .fi.gift{color:var(--gold)}
 #feed .fi.join{color:var(--cyan)}
 @keyframes fi{0%{opacity:0;transform:translateX(calc(var(--u)*-4))}6%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
-#banner{position:absolute;left:0;right:0;top:25%;z-index:35;pointer-events:none;text-align:center;padding:0 calc(var(--u)*4);opacity:0;mix-blend-mode:screen}
+#banner{position:absolute;left:0;right:0;top:68%;z-index:35;pointer-events:none;text-align:center;padding:0 calc(var(--u)*4);opacity:0}
 #banner .m{font-family:var(--display);font-size:calc(var(--u)*8);line-height:1.1;color:var(--gold);text-shadow:0 calc(var(--u)*.8) 0 #7a2b00,0 0 calc(var(--u)*6) rgba(255,210,63,.6);opacity:.82}
 #banner .s{margin-top:calc(var(--u)*2);font-family:var(--display);font-size:calc(var(--u)*5);line-height:1.15;color:#fff;text-shadow:0 calc(var(--u)*.5) 0 #4a1a91,0 0 calc(var(--u)*5) rgba(255,61,129,.8)}
 #banner.big .m{font-size:calc(var(--u)*14);opacity:.8}
+#banner.crown .m{font-size:calc(var(--u)*4.2);opacity:1;display:inline-block;background:rgba(10,6,24,.72);border:1px solid rgba(255,210,63,.5);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.4) calc(var(--u)*3.2);text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 calc(var(--u)*3) rgba(255,210,63,.5)}
 #banner.mega .m{font-size:calc(var(--u)*17);color:#fff;text-shadow:0 calc(var(--u)*.8) 0 #a1310f,0 0 calc(var(--u)*9) rgba(255,210,63,.95);opacity:.78}
 #banner.on{animation:banner var(--bt,3s) ease-out}
 @keyframes banner{0%{opacity:0;transform:scale(1.9)}9%{opacity:1;transform:scale(1)}86%{opacity:1}100%{opacity:0}}
@@ -171,9 +172,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 @keyframes cpring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.6)}}
 #cd10{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:41;pointer-events:none;font-family:var(--display);text-align:center;opacity:0;mix-blend-mode:screen}
 #cd10.on{opacity:.95}
-#cd10 .cdnum{font-size:calc(var(--u)*13);color:#fff;text-shadow:0 0 24px rgba(255,61,129,.95),0 0 46px rgba(126,60,255,.8);line-height:1}
+#cd10 .cdnum{font-size:calc(var(--u)*26);color:#fff;-webkit-text-stroke:calc(var(--u)*.35) rgba(0,0,0,.6);text-shadow:0 0 10px #000,0 0 40px rgba(255,61,129,1),0 0 80px rgba(126,60,255,.9);line-height:1}
 #cd10.beat .cdnum{animation:cdpop .5s cubic-bezier(.3,1.6,.5,1)}
-#cd10 .cdring{position:absolute;left:50%;top:50%;width:calc(var(--u)*16);height:calc(var(--u)*16);margin:calc(var(--u)*-8) 0 0 calc(var(--u)*-8);border-radius:50%;border:calc(var(--u)*.5) solid var(--gold);opacity:0}
+#cd10 .cdring{position:absolute;left:50%;top:50%;width:calc(var(--u)*30);height:calc(var(--u)*30);margin:calc(var(--u)*-15) 0 0 calc(var(--u)*-15);border-radius:50%;border:calc(var(--u)*.8) solid var(--gold);opacity:0}
 #cd10.beat .cdring{animation:cdring .55s ease-out}
 @keyframes cdpop{0%{transform:scale(.4) rotate(-8deg)}55%{transform:scale(1.25) rotate(4deg)}100%{transform:scale(1) rotate(0deg)}}
 @keyframes cdring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.8)}}
@@ -654,10 +655,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const kick = (t, v) => tone(150, t, .2, 'sine', v, 42);
   const hat = (t, v) => noise(t, .04, v, 9000, 1.2);
   const sfx = {
-    join()    { if (!ok('join', 60)) return; tone(523, 0, .08, 'sine', .14, 784); tone(784, .06, .13, 'sine', .12, 1175); },
-    tick(lo)  { tone(lo ? 1568 : 1175, 0, .09, 'square', .13, 2200); tone(lo ? 2093 : 1568, .04, .12, 'triangle', .09); if (lo) kick(0, .18); },
+    join()    { if (!ok('join', 60)) return; tone(392, 0, .07, 'sine', .11, 587); tone(587, .05, .07, 'sine', .11, 880); tone(880, .1, .16, 'sine', .14, 1318); },
+    tick(lo)  { tone(lo ? 1976 : 1480, 0, .1, 'square', .17, 2800); tone(lo ? 2637 : 1976, .035, .14, 'triangle', .11); kick(0, lo ? .26 : .16); if (lo) hat(.02, .06); },
     tap()     { if (!ok('tap', 45)) return; const f = PENTA[TAPSEQ[tapI++ % TAPSEQ.length]]; tone(f, 0, .08, 'sine', .07); tone(f * 2, 0, .04, 'triangle', .025); },
-    comment() { if (!ok('cm', 80)) return; tone(500, 0, .09, 'sine', .16, 900); tone(1000, .07, .08, 'triangle', .06); },
+    comment() { if (!ok('cm', 80)) return; tone(440, 0, .08, 'sine', .14, 660); tone(660, .055, .07, 'sine', .11, 990); tone(1320, .11, .09, 'triangle', .07); },
     share()   { [784, 988, 1175, 1568].forEach((f, i) => { tone(f, i * .06, .16, 'triangle', .15); tone(f * 2, i * .06, .08, 'sine', .05); }); hat(.24, .08); },
     gift(tier) {
       if (tier <= 2) {            // small gifts: bright coin "ding-ding" + sparkle
@@ -671,15 +672,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const end = n * .055;
       [523, 659, 784].forEach(f => tone(f, end, .5, 'sawtooth', .05));
       kick(0, .3); hat(end, .12);
-      if (tier >= 4) { kick(end, .45); noise(end, .5, .22, 1500 + tier * 400, .5); }
-      if (tier >= 5) tone(65, end, .7, 'sine', .4, 38);
+      if (tier >= 4) { kick(end, .45); noise(end, .5, .22, 1500 + tier * 400, .5); tone(1046, end + .05, .3, 'sine', .1, 1568); }
+      if (tier >= 5) { tone(65, end, .7, 'sine', .4, 38); [784, 988, 1175, 1568, 2093].forEach((f, i) => tone(f, end + .08 + i * .05, .25, 'triangle', .12)); }
     },
     horn()    { [262, 330, 392, 523].forEach(f => tone(f, 0, .45, 'sawtooth', .07, f * 1.01)); tone(131, 0, .5, 'square', .08); kick(0, .35); },
     crown()   { [659, 784, 988, 1319, 1568].forEach((f, i) => tone(f, i * .07, .3, 'triangle', .16, f * 1.4)); tone(1976, .35, .5, 'sine', .12); kick(0, .3); kick(.28, .25); hat(.35, .1); },
-    hit(dmg)  { if (!ok('hit', 45)) return; const f = 1500 + rf(0, 900) + Math.min(dmg, 20) * 25; tone(f, 0, .05, 'square', .07, f * .6); noise(0, .04, .18, 4500, .9); },
+    hit(dmg)  { if (!ok('hit', 45)) return; const f = 1500 + rf(0, 900) + Math.min(dmg, 20) * 25; tone(f, 0, .05, 'square', .08, f * .6); noise(0, .045, .2, 4500, 1); },
     clash()   { if (!ok('clash', 90)) return; tone(2400, 0, .08, 'triangle', .1, 1500); noise(0, .04, .15, 6000, 1); },
     bump()    { if (!ok('bump', 90)) return; tone(170, 0, .09, 'sine', .22, 70); },
-    pop()     { noise(0, .14, .35, 1800, .7); tone(600, 0, .17, 'sine', .3, 120); tone(1200, 0, .06, 'triangle', .1, 2000); },
+    pop()     { noise(0, .16, .4, 1800, .8); tone(600, 0, .18, 'sine', .32, 120); tone(1200, 0, .07, 'triangle', .12, 2000); tone(2400, .03, .05, 'sine', .06); },
     whistle() { if (!ok('wh', 120)) return; tone(900, 0, .6, 'sine', .08, 300); },
     boom(big) { noise(0, big ? .8 : .45, big ? .8 : .55, big ? 160 : 260, .5); tone(big ? 60 : 95, 0, big ? .9 : .5, 'sine', big ? .6 : .45, 28); },
     zap()     { noise(0, .2, .4, 5200, .7); tone(1800, 0, .2, 'sawtooth', .13, 200); },
@@ -866,7 +867,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (dead < 0) return null;
       roster.delete(players[dead].key); players.splice(dead, 1);
     }
-    p = { id: ++uid, key, name, hue: (uid * 137.5) % 360, blades: 0, bombs: 0, lightning: 0, gifted: 0, ang: rf(0, TAU), kills: 0, diedAt: -99 };
+    p = { id: ++uid, key, name, hue: (uid * 137.5) % 360, blades: 0, bombs: 0, lightning: 0, gifted: 0, ang: rf(0, TAU), kills: 0, diedAt: -99, actCount: 0 };
     makeFallback(p, bot ? pick(FACES) : null);
     if (avatar) setAvatar(p, avatar);
     spawnPlayer(p, CFG.startPoints);
@@ -1049,7 +1050,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     // overtake! crown changes hands right now, live
     const old = championName;
     champion = cand; championName = cand.name;
-    banner('👑 NEW CHAMPION!', cand.name + ' overtakes ' + old, 'big', 2.6);
+    banner('👑 ' + cand.name + ' takes the lead!', '', 'crown', 2.2);
     feed('👑 ' + cand.name + ' took the crown from ' + old + '!', 'gift');
     ring(cand.x, cand.y, '#ffd23f', cand.r + 90, 1, 6); spark(cand.x, cand.y, '#ffd23f', 36, 300, 1);
     shake(4); sfx.horn();
@@ -1171,7 +1172,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
         feed('🔁 ' + p.name + ' is back', 'join'); sfx.join();
       }
     }
-    p.lastAct = time;
+    p.lastAct = time; p.actCount = (p.actCount || 0) + 1;
     const x = p.x, y = p.y - p.r;
     const count = clamp(parseInt(e.count, 10) || 1, 1, 50);
     if (type === 'tap' || type === 'like') {
@@ -1238,8 +1239,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     feed('🎁 ' + p.name + ' sent ' + gname + (coins > 1 ? ' (' + coins.toLocaleString() + ')' : ''), 'gift');
 
     const sh = shoutFor(p.name, coins);
+    const earnedShout = coins >= SHOUT_MIN || p.actCount >= 12;   // big gift OR a proven regular
     banner('🎁 ' + p.name + ' · ' + gname + '!', sh.shown, tier >= 5 ? 'mega' : tier >= 4 ? 'big' : '', tier >= 4 ? 4.6 : 3.4);
-    if (tier >= 4) { sfx.horn(); giftPop(p, gname); }
+    if (tier >= 4 && earnedShout) { sfx.horn(); giftPop(p, gname); }
 
     if (coins >= 100) { spot = { p, t: 2.6 }; startNuke(p); spark(p.x, p.y, '#fff', 40, 320, 1); }
     if (coins >= 1000) startMeteors(p, 5 + tier * 2);
@@ -2718,7 +2720,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (hash) { if (window.__fxAction) window.__fxAction(Number(hash[1])); return; }
     for (const [re, kind] of WORDS) if (re.test(txt)) { fxPlay(kind, 1); return; }
   };
-  const ALL_KINDS = ['rose', 'lion', 'queen', 'pride'].concat(CLIP_BTNS.map(b => b[1]));
+  // auto-show (#0000 / #000 / #00) plays only animals/videos plus these four flags; pirate, Canada and Israel stay manual (trigger word / test button)
+  const AUTO_SKIP = ['pirate', 'canada', 'israel'];
+  const ALL_KINDS = ['rose', 'lion', 'queen', 'pride'].concat(CLIP_BTNS.map(b => b[1]).filter(k => AUTO_SKIP.indexOf(k) < 0));
   let fxAutoTimer = null, fxAutoMs = 0, fxAutoIdx = 0;
   function fxAutoStop() { if (fxAutoTimer) { clearInterval(fxAutoTimer); fxAutoTimer = null; } fxAutoMs = 0; }
   function fxAutoStep() { const k = ALL_KINDS[fxAutoIdx % ALL_KINDS.length]; fxAutoIdx++; fxPlay(k, 1); }
