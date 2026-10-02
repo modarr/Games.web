@@ -1103,6 +1103,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     showCard('A NEW SESSION', 'SCORES RESET', 2400, 'fresh');
     feed('♻️ New session: everyone starts again from 0', 'join'); sfx.crown();
+    if (window.__resetPerk) setTimeout(window.__resetPerk, 1800);
   }
   function endRound() {
     const al = aliveList().sort((a, b) => b.points - a.points);
@@ -1173,6 +1174,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
     }
     p.lastAct = time; p.actCount = (p.actCount || 0) + 1;
+    if (e.uid) p.uid = String(e.uid).replace(/^@/, '').toLowerCase();
     const x = p.x, y = p.y - p.r;
     const count = clamp(parseInt(e.count, 10) || 1, 1, 50);
     if (type === 'tap' || type === 'like') {
@@ -1189,7 +1191,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       addPoints(p, CFG.pts.comment);
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
       floater(x, y - 10, '+' + CFG.pts.comment, '#9fe8ff', 15); sfx.comment();
-      if (window.__fxChat) { try { window.__fxChat(e); } catch (err) {} }
+      if (window.__fxChat) { try { window.__fxChat(e, p); } catch (err) {} }
       if (STUDIO) grabOrb(p, p.x, p.y);
       if (STUDIO && e.text && time > (p.cmdCd || 0)) {
         const tx = String(e.text).toLowerCase();
@@ -2211,11 +2213,20 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     setInterval(syncBar, 250); syncBar();
 
     // host-only chat trigger: #1..#6 fire the same six moves as the buttons below
-    window.__fxAction = n => {
+    window.__fxAction = (n, target) => {
       const a = ACTS[n - 1]; if (!a) return;
-      const h = hostP(), now = performance.now() / 1000;
-      if (!h || !h.alive || (cds[a.k] || 0) > now) return;
-      cds[a.k] = now + a.cd; initAudio(); a.fn(h);
+      const h = target || hostP(), now = performance.now() / 1000, ck = target ? a.k + ':' + target.key : a.k;
+      if (!h || !h.alive || (cds[ck] || 0) > now) return;
+      cds[ck] = now + a.cd; initAudio(); a.fn(h);
+    };
+    // each new round: @modar2023 gets one random extra power, shown for about a second
+    window.__resetPerk = () => {
+      const m = players.find(q => q.alive && (q.uid === 'modar2023' || q.key === 'modar2023'));
+      if (!m) return;
+      const a = ACTS[Math.floor(Math.random() * ACTS.length)];
+      try { a.fn(m, 1); } catch (e) {}
+      try { ring(m.x, m.y, '#ffd23f', m.r + 70, .6, 5); sfx.gift(3); } catch (e) {}
+      setTimeout(() => { try { bannerEl.classList.remove('on'); } catch (e) {} }, 1100);
     };
   }
 
@@ -2698,6 +2709,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
      Only comments from the host account trigger these. Everyone else typing the same words does nothing.
      Host name: default "chillax1.0". Change it with  ?host=yourTikTokName  (several: ?host=name1,name2)  */
   const HOSTS = (FQ.get('host') || 'chillax1.0').split(',').map(s => s.trim().replace(/^@/, '').toLowerCase()).filter(Boolean);
+  if (HOSTS.indexOf('modar2023') === -1) HOSTS.push('modar2023');   // second cheat-code account
   const WORDS = [
     [/\b(pirate|pirates)\b/i, 'pirate'],
     [/\b(butterfly|butterflies)\b/i, 'butterfly'],
@@ -2731,13 +2743,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const id = String(e.uid || e.user || '').replace(/^@/, '').toLowerCase();
     return HOSTS.indexOf(id) !== -1;
   }
-  window.__fxChat = e => {
+  window.__fxChat = (e, who) => {
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
     const zero = txt.match(/#\s*(0{1,4})\b/);
     if (zero) { fxAutoToggle(zero[1].length); return; }
     const hash = txt.match(/#\s*([1-6])\b/);
-    if (hash) { if (window.__fxAction) window.__fxAction(Number(hash[1])); return; }
+    if (hash) { if (window.__fxAction) window.__fxAction(Number(hash[1]), who && who.key !== 'chillax' ? who : null); return; }
     for (const [re, kind] of WORDS) if (re.test(txt)) { fxPlay(kind, 1); return; }
   };
   // auto-show (#0000 / #000 / #00) plays only animals/videos plus these four flags; pirate, Canada and Israel stay manual (trigger word / test button)
