@@ -734,6 +734,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     siren()   { tone(600, 0, .45, 'sawtooth', .13, 950); tone(950, .45, .45, 'sawtooth', .13, 600); tone(600, .9, .45, 'sawtooth', .13, 950); },
     meteor()  { noise(0, .5, .3, 320, .4); tone(220, 0, .5, 'sawtooth', .09, 60); },
     laser()   { tone(1250, 0, .09, 'square', .018, 380); },
+    roar()    { noise(0, 1.5, .5, 180, .7); noise(.1, 1.2, .3, 900, 1.2); tone(78, 0, 1.6, 'sawtooth', .2, 38); tone(52, .08, 1.4, 'square', .13, 30); tone(160, .15, 1.0, 'sawtooth', .07, 70); },
+    rumble()  { noise(0, .9, .35, 90, .8); tone(46, 0, .9, 'sine', .22, 30); },
     voidOpen() { tone(260, 0, .6, 'sine', .1, 55); tone(90, .1, .8, 'triangle', .1, 40); },
     voidClose() { tone(140, 0, .25, 'sine', .14, 30); noise(0, .12, .1, 900, .3); },
     shipboom() { noise(0, .45, .34, 520, .5); tone(150, 0, .5, 'sawtooth', .13, 38); tone(70, .04, .45, 'sine', .16, 30); }
@@ -931,6 +933,78 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     tipEl.classList.remove('on'); void tipEl.offsetWidth; tipEl.classList.add('on'); return true;
   }
   (function tipLoop() { setTimeout(() => { tipLoop._d = showTip() ? 22000 : 2500; tipLoop(); }, tipLoop._d || 9000); })();
+
+  /* ---------- THE MONSTER: wakes up with 30s left in a round (or on host command x0x), roars, shakes everything, hurts everyone ---------- */
+  let monster = null;
+  const MONSTER_DUR = 3.8;
+  function startMonster(manual) {
+    if (monster) return;
+    monster = { t: 0, hit: false, snd: false };
+    sfx.rumble(); shake(6);
+    try { banner('FIGHT FOR YOUR LIFE', 'ONLY HEROES SURVIVE', 'mega', 3.4); } catch (e) {}
+    try { feed('👹 THE MONSTER AWAKENS!', 'kill'); } catch (e) {}
+  }
+  window.__fxMonster = () => { if (round.phase === 'play') startMonster(true); };
+  function updateMonster(dt) {
+    if (!monster) return;
+    monster.t += dt; const t = monster.t;
+    if (!monster.snd && t >= 1.1) {
+      monster.snd = true; sfx.roar(); flash = Math.max(flash, .25);
+      try { if (navigator.vibrate) navigator.vibrate([250, 70, 250, 70, 500]); } catch (e) {}
+    }
+    if (t >= 1.1 && t < 2.9) { shake(12); flash = Math.max(flash, .06); }
+    if (!monster.hit && t >= 1.3) {   // the roar hurts EVERYONE: 5% of the leader's points, so small fighters get wiped out
+      monster.hit = true;
+      const al = aliveList();
+      let top = 0; for (const p of al) top = Math.max(top, p.points);
+      const dmg = Math.max(3, top * .05);
+      for (const p of al) { if (!p.alive) continue; ring(p.x, p.y, '#ff3b2e', p.r + 40, .5, 3); hurt(p, dmg, null, 'monster'); }
+      shake(16); flash = Math.max(flash, .35);
+    }
+    if (t >= MONSTER_DUR) monster = null;
+  }
+  function drawMonster() {
+    if (!monster) return;
+    const t = monster.t, ease = u => u * u * (3 - 2 * u);
+    const a = clamp(t / .7, 0, 1) * clamp((MONSTER_DUR - t) / .7, 0, 1);
+    const roar = clamp((t - 1.1) / .25, 0, 1) * clamp((2.9 - t) / .3, 0, 1);
+    const open = ease(clamp(t / .6, 0, 1));
+    const cx = W / 2 + roar * Math.sin(t * 70) * 4, cy = (ARENA.y0 + ARENA.y1) / 2 - 30 + roar * Math.cos(t * 63) * 3;
+    const R = Math.min(W * .62, (ARENA.y1 - ARENA.y0) * .55) * (.82 + .2 * ease(clamp(t / 1, 0, 1)) + roar * .08);
+    ctx.save();
+    if (roar > 0) { ctx.fillStyle = 'rgba(140,0,0,' + (.2 * roar) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+    ctx.globalAlpha = a * .93;
+    const g = ctx.createRadialGradient(cx, cy, R * .2, cx, cy, R * 1.25);
+    g.addColorStop(0, 'rgba(0,0,0,.97)'); g.addColorStop(.62, 'rgba(24,0,26,.92)'); g.addColorStop(1, 'rgba(90,0,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.25, 0, TAU); ctx.fill();
+    // eyes + angry brows
+    const ey = cy - R * .3, ex = R * .43;
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(s * .32);
+      ctx.shadowColor = '#ff3b2e'; ctx.shadowBlur = 34;
+      const eg = ctx.createRadialGradient(0, 0, 2, 0, 0, R * .22); eg.addColorStop(0, '#fff2a0'); eg.addColorStop(.55, '#ffb21e'); eg.addColorStop(1, '#ff2a1a');
+      ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(0, 0, R * .21, R * .13 * (.25 + .75 * open), 0, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = '#1a0000'; ctx.beginPath(); ctx.ellipse(0, 0, R * .035, R * .12 * open, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#000'; ctx.lineWidth = R * .06; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-s * R * .26, -R * .2 * open); ctx.lineTo(s * R * .24, -R * .02 * open - R * .02); ctx.stroke();
+      ctx.restore();
+    }
+    // mouth + teeth
+    const my = cy + R * .22, mw = R * .86, mh = R * (.06 + .56 * roar);
+    const mcy = my + mh / 2;
+    ctx.fillStyle = '#0c0006'; ctx.beginPath(); ctx.ellipse(cx, mcy, mw / 2, mh / 2 + 3, 0, 0, TAU); ctx.fill();
+    if (mh > 10) { const mg = ctx.createRadialGradient(cx, mcy, 4, cx, mcy, mw / 2); mg.addColorStop(0, 'rgba(150,0,25,.95)'); mg.addColorStop(1, 'rgba(30,0,8,.9)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.ellipse(cx, mcy, mw / 2 - 5, Math.max(1, mh / 2 - 3), 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#f2eedc'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1.5;
+    const N = 9;
+    for (let i = 0; i < N; i++) {
+      const u = (i + .5) / N * 2 - 1, x = cx + u * mw / 2 * .9, k = Math.sqrt(Math.max(0, 1 - u * u * .81));
+      const tw = mw / N * .52, tl = R * (.07 + .09 * roar) * (.7 + .5 * k);
+      const ty = mcy - (mh / 2) * k, by = mcy + (mh / 2) * k;
+      ctx.beginPath(); ctx.moveTo(x - tw, ty); ctx.lineTo(x + tw, ty); ctx.lineTo(x, ty + tl); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - tw, by); ctx.lineTo(x + tw, by); ctx.lineTo(x, by - tl * .85); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
   function setMuted(v) {
     muted = v;
     if (master) master.gain.value = muted ? 0 : 1;
@@ -1303,6 +1377,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (!round.shrinkDone && round.t <= SHRINK.warn + autoShrinkCloseSecs()) { round.shrinkDone = true; shrinkAutoStart(); }
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
+      if (!round.monsterDone && round.t <= Math.min(50, round.len * .5)) { round.monsterDone = true; startMonster(false); }
       // big catchy center countdown for the last 10 seconds, one punchy beat per second
       if (round.t <= 10 && round.t > 0) {
         const n = Math.ceil(round.t);
@@ -1419,6 +1494,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function endRound() {
     shrinkStop(true);
     setShipMode(false, true);
+    monster = null;
     const al = aliveList().sort((a, b) => b.points - a.points);
     round.phase = 'gap'; round.t = 999; round.reset = false; round.cdn = 0;
     const winMs = Math.min(6500, Math.max(2500, winMs0()));
@@ -1467,7 +1543,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function startRound() {
     shrinkStop(true);
     round.reset = true;
-    round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false;
+    round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false; round.monsterDone = false;
     showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
     showMotiv('⚔️ Round ' + round.num + ' has begun!');
     if (SHIP_AUTO && round.num >= SESSION_PLAN.length) setShipMode(true); else setShipMode(false, true);
@@ -1989,6 +2065,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
     updateShips(dt);
     updateVoids(dt);
+    updateMonster(dt);
     // bombs in flight
     for (let i = bombs.length - 1; i >= 0; i--) {
       const b = bombs[i]; b.t += dt;
@@ -2420,6 +2497,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
       ctx.restore();
     }
+    drawMonster();
     drawVoids();
     const al = aliveList().sort((a, b) => a.r - b.r);
     for (const p of al) drawPlayer(p);
@@ -3338,9 +3416,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     return HOSTS.indexOf(id) !== -1;
   }
   window.__fxChat = (e, who) => {
-    try { if (e && e.text && isHost(e) && /^\s*#ship\s*$/i.test(String(e.text))) { setShipMode(!shipMode); return; } } catch (err) {}
+    try { if (e && e.text && isHost(e) && /^\s*#ship\s*$/i.test(String(e.text))) { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); return; } } catch (err) {}
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
+    if (/^\s*#?\s*x\s*0\s*x\s*$/i.test(txt)) { if (window.__fxMonster) window.__fxMonster(); return; }
     if (/^\s*#?\s*1\s*x\s*1\s*$/i.test(txt)) { if (window.__fxQuick) window.__fxQuick(); return; }
     const rank2 = txt.match(/#\s*(0[123]|[123]{2})\s*$/);
     if (rank2) { const d = rank2[1]; window.__fxShout(d[0] === '0' ? 'gift' : 'score', Number(d[1]), ''); return; }
