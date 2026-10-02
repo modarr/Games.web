@@ -101,7 +101,7 @@ body.overlay #mute:hover,body.overlay #self:hover,body.overlay #mute:focus-visib
 #banner .s{margin-top:calc(var(--u)*2);font-family:var(--display);font-size:calc(var(--u)*5);line-height:1.15;color:#fff;text-shadow:0 calc(var(--u)*.5) 0 #4a1a91,0 0 calc(var(--u)*5) rgba(255,61,129,.8)}
 #banner.big .m{font-size:calc(var(--u)*14);opacity:.8}
 #banner.crown .m{font-size:calc(var(--u)*4.2);opacity:1;display:inline-block;background:rgba(10,6,24,.72);border:1px solid rgba(255,210,63,.5);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.4) calc(var(--u)*3.2);text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 calc(var(--u)*3) rgba(255,210,63,.5)}
-#cd10 .cdhint{margin-top:calc(var(--u)*2.5);font:800 calc(var(--u)*3.8) system-ui;color:#ffe9a6;text-shadow:0 0 8px #000,0 0 18px #000}
+#cd10 .cdside{position:absolute;top:50%;transform:translateY(-50%);width:calc(var(--u)*30);font:800 max(11px,calc(var(--u)*2.9)) system-ui;line-height:1.25;color:#fff;text-align:center;padding:calc(var(--u)*1.6) calc(var(--u)*1.4);border-radius:calc(var(--u)*4);text-shadow:0 1px 3px #000;pointer-events:none}#cd10 .cdside.l{right:calc(100% + var(--u)*2);background:linear-gradient(135deg,rgba(255,80,80,.42),rgba(255,180,40,.38));border:2px solid rgba(255,200,80,.9);box-shadow:0 0 calc(var(--u)*3) rgba(255,160,40,.6)}#cd10 .cdside.r{left:calc(100% + var(--u)*2);width:calc(var(--u)*35);background:linear-gradient(135deg,rgba(160,60,255,.42),rgba(0,200,255,.38));border:2px solid rgba(140,220,255,.9);box-shadow:0 0 calc(var(--u)*3) rgba(80,200,255,.6)}
 #banner.mon{top:40%}
 #banner.mon .m{font-size:calc(var(--u)*11);color:#fff;text-shadow:0 calc(var(--u)*.7) 0 #8a0f0f,0 0 calc(var(--u)*9) rgba(255,40,40,.95);opacity:.95;letter-spacing:.02em}
 #banner.mega .m{font-size:calc(var(--u)*17);color:#fff;text-shadow:0 calc(var(--u)*.8) 0 #a1310f,0 0 calc(var(--u)*9) rgba(255,210,63,.95);opacity:.78}
@@ -136,7 +136,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 #selfpanel button:active{background:#3a2a8a}
 #selfpanel .note{margin:calc(var(--u)*1.6) 0 0;font-size:max(10px,calc(var(--u)*2.5));color:rgba(246,242,255,.6);line-height:1.35}
 #tip{position:absolute;top:calc(var(--u)*11);left:50%;transform:translateX(-50%);z-index:44;pointer-events:none;max-width:94%;text-align:center;white-space:nowrap;font-weight:900;font-size:max(13px,calc(var(--u)*3.3));color:#fff;padding:calc(var(--u)*1.2) calc(var(--u)*3.6);border-radius:calc(var(--u)*5);background:linear-gradient(90deg,rgba(0,200,255,.38),rgba(160,60,255,.42));border:2px solid rgba(120,240,255,.9);box-shadow:0 0 calc(var(--u)*3) rgba(0,220,255,.65);text-shadow:0 1px 3px #000,0 0 calc(var(--u)*2) rgba(0,220,255,.9);backdrop-filter:blur(3px);opacity:0}
-#tip.on{animation:tip 8s ease-out}
+#tip.on{opacity:1;animation:tipflip .45s ease-out}
+@keyframes tipflip{0%{opacity:.15;transform:translateX(-50%) translateY(calc(var(--u)*-1.2)) scale(.94)}100%{opacity:1;transform:translateX(-50%)}}
 @keyframes tip{0%{opacity:0;transform:translateX(-50%) translateY(calc(var(--u)*-2)) scale(.92)}8%{opacity:1;transform:translateX(-50%)}88%{opacity:1}100%{opacity:0}}
 #roundbar{position:absolute;top:calc(var(--u)*3);left:50%;transform:translateX(-50%);z-index:45;background:rgba(11,8,32,.72);border:1px solid rgba(255,255,255,.2);border-radius:calc(var(--u)*6);padding:calc(var(--u)*1.4) calc(var(--u)*4);font-weight:800;font-size:max(13px,calc(var(--u)*3.4));color:var(--gold);letter-spacing:.02em;pointer-events:none;text-align:center;white-space:nowrap}
 #roundbar.hot{color:#ff5a7a;animation:rpulse .6s infinite}
@@ -507,7 +508,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     <div class="cpname" id="cpname"></div>
     <div class="cpsub">is in the lead!</div>
   </div>
-  <div id="cd10"><div class="cdring"></div><div class="cdnum" id="cdnum"></div><div class="cdhint">🎁 Send a Rose: +1 second!</div></div>
+  <div id="cd10"><div class="cdring"></div><div class="cdnum" id="cdnum"></div><div class="cdside l">🌹 Gift 1+ =<br>power &amp; blades</div><div class="cdside r">🎁 Gift 20+ =<br>attack enemies!</div></div>
   <div id="fxLayer"></div>
   <pre id="dbg" hidden></pre>
 </div>
@@ -939,12 +940,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const tipEl = document.getElementById('tip');
   const wgiftEl = document.getElementById('wgift');
   const GIFT_HINTS = [
-    '🌹 Rose (1 coin) = +1 second on the clock & a blade ⚔️',
-    '🧴 Perfume (20) = +20 seconds, more life, hits your nearest enemy!',
-    '🍩 Doughnut (30) = +30 seconds & more life!',
-    '🫶 Hand Hearts (100) = DESTROYS enemies + 60 seconds!',
-    '⏱️ 1 coin = 1 extra second. Every coin counts!',
-    '🎁 Gifts of 20+ strike whoever is closest to you!'
+    '🌹 Rose (1 coin) = a blade ⚔️ & power!',
+    '🧴 Perfume (20) = more power & ATTACKS your nearest enemy!',
+    '🍩 Doughnut (30) = more power & ATTACKS your nearest enemy!',
+    '🫶 Hand Hearts (100) = DESTROYS your enemies!',
+    '⚔️ Every coin makes you stronger!',
+    '🎁 Gifts of 20+ attack whoever is closest to you!'
   ];
   let wgiftT = null;
   function wgiftStart() {
@@ -954,17 +955,19 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     wgiftT = setInterval(() => { i = (i + 1) % GIFT_HINTS.length; wgiftEl.textContent = GIFT_HINTS[i]; }, 2200);
   }
   function wgiftStop() { clearInterval(wgiftT); wgiftT = null; }
-  const TIPS_COMMON = ['👆 Tap, share & comment for more points!', '💬 Comment & share to grow your bubble!', '⏱️ 1 coin = +1 second on the clock!'];
-  const TIPS_BLADES = ['🎁 Gift for blades. Strike harder!', '💥 Gift 100+ coins to DESTROY your enemies!'];
+  const TIPS_COMMON = ['👆 Tap, share & comment for more points!', '💬 Comment & share to grow your bubble!'];
+  const TIPS_BLADES = ['🌹 Send a Rose: a blade & power!', '🎁 Send 20+ coins: attack your nearest enemy!', '💥 Send 100+ coins to DESTROY your enemies!'];
   const TIPS_SHIP = ['🚀 Gift for firepower. Blast your enemies!', '💥 Gift 100+ coins for a full-ring blast!'];
+  let tipLast = 0;
   function showTip() {
-    if (!tipEl || round.phase !== 'play') return false;
-    if (time - lastGiftAt < 1.2) return false;   // let the gift celebration breathe
+    if (!tipEl) return;
+    if (round.phase !== 'play') { tipEl.classList.remove('on'); tipLast = 0; return; }
     const list = TIPS_COMMON.concat(shipMode ? TIPS_SHIP : TIPS_BLADES);
     tipEl.textContent = list[tipIdx++ % list.length];
-    tipEl.classList.remove('on'); void tipEl.offsetWidth; tipEl.classList.add('on'); return true;
+    tipEl.classList.remove('on'); void tipEl.offsetWidth; tipEl.classList.add('on'); tipLast = Date.now();
   }
-  (function tipLoop() { setTimeout(() => { tipLoop._d = showTip() ? 20000 : 1000; tipLoop(); }, tipLoop._d || 6000); })();
+  // the tip bar stays on screen the whole round; only its text flips, every 5 seconds
+  setInterval(() => { if (!tipEl) return; if (round.phase === 'play' && (!tipEl.classList.contains('on') || Date.now() - tipLast >= 5000)) showTip(); else if (round.phase !== 'play') showTip(); }, 500);
 
   /* ---------- THE MONSTER: wakes up with 30s left in a round (or on host command x0x), roars, shakes everything, hurts everyone ---------- */
   let monster = null;
@@ -978,6 +981,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   window.__fxMonster = () => { if (round.phase === 'play') startMonster(true); };
   window.__fxKill = () => { const al = aliveList(); if (al.length > 2) { const v = al[Math.floor(Math.random() * al.length)]; hurt(v, v.points + 1, null, 'test'); } };
+  window.__fxCountdown = () => { if (round.phase === 'play') round.t = Math.min(round.t, 10.4); };
   window.__fxState = () => ({ t: round.t, phase: round.phase, alive: aliveList().map(q => [q.name, Math.round(q.points)]) });
   function updateMonster(dt) {
     if (!monster) return;
@@ -1732,7 +1736,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (coins >= 100) { spot = { p, t: 2.6 }; startNuke(p); spark(p.x, p.y, '#fff', 40, 320, 1); }
     if (coins >= 1000) startMeteors(p, 5 + tier * 2);
     if (shipMode) shipSalvo(p, coins >= 100 ? 18 : Math.min(9, 2 + Math.floor(coins / 8)), coins >= 100);
-    if (round.phase === 'play') { const add = Math.min(coins, 60); round.t += add; round.len += add; floater(p.x, p.y - p.r - 30, '+' + add + 's ⏱', '#ffe27a', 16); }
     if (coins >= 20) giftAssist(p, coins, tier);   // 20+ coin gift: strike whichever enemy is nearest to the gifter's fighter
   }
   function giftAssist(p, coins, tier) {
