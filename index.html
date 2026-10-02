@@ -730,6 +730,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     siren()   { tone(600, 0, .45, 'sawtooth', .13, 950); tone(950, .45, .45, 'sawtooth', .13, 600); tone(600, .9, .45, 'sawtooth', .13, 950); },
     meteor()  { noise(0, .5, .3, 320, .4); tone(220, 0, .5, 'sawtooth', .09, 60); },
     laser()   { tone(1250, 0, .09, 'square', .018, 380); },
+    voidOpen() { tone(260, 0, .6, 'sine', .1, 55); tone(90, .1, .8, 'triangle', .1, 40); },
+    voidClose() { tone(140, 0, .25, 'sine', .14, 30); noise(0, .12, .1, 900, .3); },
     shipboom() { noise(0, .45, .34, 520, .5); tone(150, 0, .5, 'sawtooth', .13, 38); tone(70, .04, .45, 'sine', .16, 30); }
   };
 
@@ -838,6 +840,77 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const w = Math.max(26, r * 1.7), h = 5, y = -r - 14, f = clamp(p.points / (p.shipMax || p.points || 1), 0, 1);
     ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(-w / 2 - 1, y - 1, w + 2, h + 2);
     ctx.fillStyle = f > .5 ? '#5dff8a' : f > .25 ? '#ffd23f' : '#ff4f6b'; ctx.fillRect(-w / 2, y, w * f, h); ctx.restore();
+  }
+
+  /* ---------- Black hole + grabbing hand: eliminated players get dragged away ---------- */
+  const voids = [];
+  const VOID_DUR = 1.8;
+  function startVoid(v) {
+    if (voids.length >= 3) return;
+    const cx = (ARENA.x0 + ARENA.x1) / 2, cy = (ARENA.y0 + ARENA.y1) / 2;
+    let dx = cx - v.x, dy = cy - v.y, d = Math.hypot(dx, dy);
+    if (d < 40) { const a = Math.random() * TAU; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+    const dist = v.r + 95;
+    const hx = clamp(v.x + dx / d * dist, ARENA.x0 + 40, ARENA.x1 - 40), hy = clamp(v.y + dy / d * dist, ARENA.y0 + 40, ARENA.y1 - 40);
+    voids.push({ g: Object.assign({}, v, { alive: true, soT: 0, shield: 0, glow: 0, mega: 0 }), vx: v.x, vy: v.y, hx, hy, t: 0, spin: 0, done: false });
+    sfx.voidOpen();
+  }
+  function updateVoids(dt) {
+    for (let i = voids.length - 1; i >= 0; i--) {
+      const o = voids[i]; o.t += dt;
+      if (!o.done && o.t >= VOID_DUR - .25) {
+        o.done = true; sfx.voidClose();
+        ring(o.hx, o.hy, '#b48cff', 90, .5, 4); spark(o.hx, o.hy, '#d7b8ff', 16, 220, .6); spark(o.hx, o.hy, '#fff', 6, 260, .35);
+      }
+      if (o.t >= VOID_DUR) voids.splice(i, 1);
+    }
+  }
+  function drawVoids() {
+    for (const o of voids) {
+      const t = o.t, ease = u => u * u * (3 - 2 * u);
+      const open = clamp(t / .3, 0, 1), close = clamp((VOID_DUR - t) / .25, 0, 1);
+      const s = ease(open) * ease(close);
+      const reach = ease(clamp((t - .25) / .4, 0, 1)), drag = ease(clamp((t - .65) / .85, 0, 1));
+      // black hole
+      ctx.save(); ctx.translate(o.hx, o.hy);
+      const gl = ctx.createRadialGradient(0, 0, 8, 0, 0, 90 * s + 1);
+      gl.addColorStop(0, 'rgba(150,90,255,.55)'); gl.addColorStop(1, 'rgba(150,90,255,0)');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 90 * s + 1, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      for (let k = 0; k < 3; k++) {
+        const rr = (62 - k * 13) * s; if (rr < 1) continue;
+        ctx.save(); ctx.rotate(t * (k % 2 ? 4 : -4) + k);
+        ctx.strokeStyle = 'rgba(' + (k ? '120,200,255' : '255,110,200') + ',' + (.85 - k * .18) + ')'; ctx.lineWidth = 4 - k;
+        ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * .38, 0, 0, TAU); ctx.stroke(); ctx.restore();
+      }
+      const cr = 32 * s;
+      if (cr > 1) { const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, cr); cg.addColorStop(0, '#000'); cg.addColorStop(.75, '#0d0617'); cg.addColorStop(1, 'rgba(13,6,23,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0, 0, cr, 0, TAU); ctx.fill(); }
+      ctx.restore();
+      // victim (ghost copy of the bubble/ship) + hand
+      const gx = o.vx + (o.hx - o.vx) * drag, gy = o.vy + (o.hy - o.vy) * drag;
+      const hx = t < .65 ? o.hx + (o.vx - o.hx) * reach : gx, hy = t < .65 ? o.hy + (o.vy - o.hy) * reach : gy;
+      if (t > .1) {   // arm
+        ctx.save(); ctx.strokeStyle = 'rgba(190,150,255,.9)'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+        ctx.shadowColor = '#b48cff'; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.moveTo(o.hx, o.hy); ctx.lineTo(hx, hy); ctx.stroke(); ctx.restore();
+      }
+      o.spin += .016 * 14 * drag;
+      const sc = 1 - .88 * drag;
+      ctx.save(); ctx.translate(gx, gy); ctx.rotate(o.spin); ctx.translate(-gx, -gy);
+      ctx.globalAlpha = 1 - .35 * drag;
+      const g = o.g; g.x = gx; g.y = gy; g.r = Math.max(2, o.g.tr ? o.g.tr * sc : 14 * sc);
+      if (o.base == null) o.base = o.g.r; g.r = Math.max(2, o.base * sc);
+      drawPlayer(g);
+      ctx.restore();
+      if (t > .15) {   // hand: open while reaching, closed once it has grabbed
+        const ang = Math.atan2(o.vy - o.hy, o.vx - o.hx), closed = t >= .65;
+        ctx.save(); ctx.translate(hx, hy); ctx.rotate(ang);
+        ctx.fillStyle = 'rgba(200,170,255,.95)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.shadowColor = '#b48cff'; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.arc(0, 0, 13, 0, TAU); ctx.fill(); ctx.stroke();
+        for (let f = -2; f <= 2; f++) { const fa = f * (closed ? .2 : .42), fl = closed ? 15 : 21; ctx.save(); ctx.rotate(fa); ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(8 + fl, 0); ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(200,170,255,.95)'; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore(); }
+        ctx.restore();
+      }
+    }
   }
   function setMuted(v) {
     muted = v;
@@ -1574,6 +1647,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       feed('💥 ' + a.name + ' popped ' + v.name, 'kill');
     } else feed('💥 ' + v.name + ' popped', 'kill');
     sfx.pop(); shake(3 + Math.min(5, v.r / 14));
+    startVoid(v);
     if (shipMode) {   // ship destroyed: proper explosion
       ring(v.x, v.y, '#ffb347', v.r + 110, .7, 6); ring(v.x, v.y, '#fff', v.r + 50, .45, 3);
       spark(v.x, v.y, '#ffb347', 30, 340, .9); spark(v.x, v.y, '#ff5c2a', 22, 260, .8); spark(v.x, v.y, '#fff', 10, 380, .5);
@@ -1894,6 +1968,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
 
     updateShips(dt);
+    updateVoids(dt);
     // bombs in flight
     for (let i = bombs.length - 1; i >= 0; i--) {
       const b = bombs[i]; b.t += dt;
@@ -2325,6 +2400,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
       ctx.restore();
     }
+    drawVoids();
     const al = aliveList().sort((a, b) => a.r - b.r);
     for (const p of al) drawPlayer(p);
     drawShots();
