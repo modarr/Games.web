@@ -787,7 +787,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       step++;
     }, 280);
   }
-  window.__shipMode = false;
+  window.__shipMode = true;
   window.__setShipMode = on => {
     window.__shipMode = !!on;
     spaceWarMusic(window.__shipMode);
@@ -2175,20 +2175,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
 
     const shipMode = !!window.__shipMode;
-    if (shipMode) ctx.rotate(p.heading || p.ang || 0);
-    // body: profile picture clipped to a circle, or a ship hull
-    ctx.save();
     const saucer = shipMode;
-    if (saucer) {
-      ctx.beginPath();
-      ctx.moveTo(r * 1.45, 0);
-      ctx.lineTo(r * .15, r * .42);
-      ctx.lineTo(-r * .85, r * .55);
-      ctx.lineTo(-r * .45, 0);
-      ctx.lineTo(-r * .85, -r * .55);
-      ctx.lineTo(r * .15, -r * .42);
-      ctx.closePath();
-    } else ctx.beginPath(), ctx.arc(0, 0, r, 0, TAU);
+    if (saucer) ctx.rotate(p.aim || 0);
+    // body: profile picture is the cockpit
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, TAU);
     ctx.clip();
     const img = p.img || p.fb;
     const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
@@ -2204,18 +2196,16 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     if (p.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (p.flash / .12 * .7) + ')'; ctx.fillRect(-r, -r, 2 * r, 2 * r); }
     ctx.restore();
-    ctx.lineWidth = isGifter ? 4.5 : 3.5; ctx.strokeStyle = shipMode ? '#e9f7ff' : 'hsla(' + hue + ',' + sat + ',78%,.98)';
-    ctx.beginPath();
+    ctx.lineWidth = isGifter ? 4.5 : 3.5; ctx.strokeStyle = shipMode ? '#d7e7f5' : 'hsla(' + hue + ',' + sat + ',78%,.98)';
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
     if (saucer) {
-      ctx.moveTo(r * 1.45, 0); ctx.lineTo(r * .15, r * .42); ctx.lineTo(-r * .85, r * .55); ctx.lineTo(-r * .45, 0); ctx.lineTo(-r * .85, -r * .55); ctx.lineTo(r * .15, -r * .42); ctx.closePath();
-    } else ctx.arc(0, 0, r, 0, TAU);
-    ctx.stroke();
-    if (saucer) {
-      ctx.strokeStyle = '#9fe8ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r * .15, 0, r * .28, r * .18, 0, 0, TAU); ctx.stroke();
-      ctx.fillStyle = 'rgba(120,220,255,' + (.45 + .4 * Math.sin(time * 16)) + ')';
-      ctx.beginPath(); ctx.moveTo(-r * .7, 0); ctx.lineTo(-r * 1.35, r * .16); ctx.lineTo(-r * 1.35, -r * .16); ctx.fill();
-      ctx.fillStyle = (Math.sin(time * 12) > 0) ? '#ff4f8b' : '#8be7ff';
-      ctx.beginPath(); ctx.arc(-r * .2, r * .38, 2.2, 0, TAU); ctx.arc(-r * .2, -r * .38, 2.2, 0, TAU); ctx.fill();
+      const blink = Math.sin(time * 9) > 0;
+      ctx.lineWidth = 2.4; ctx.strokeStyle = '#9fb4c8';
+      ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#c5d4e2'; ctx.lineWidth = Math.max(3, r * .18); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(r * .2, -r * .42); ctx.lineTo(r * 1.35, -r * .42); ctx.moveTo(r * .2, r * .42); ctx.lineTo(r * 1.35, r * .42); ctx.stroke();
+      ctx.fillStyle = blink ? '#ff3b3b' : '#ffd23f';
+      ctx.beginPath(); ctx.arc(r * 1.35, -r * .42, Math.max(2.6, r * .12), 0, TAU); ctx.arc(r * 1.35, r * .42, Math.max(2.6, r * .12), 0, TAU); ctx.fill();
     } else {
     if (isGifter) { ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = crowd > 28 ? 0 : 16; }
     ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); ctx.shadowBlur = 0;
@@ -2252,7 +2242,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     // name + points
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
     const pts = fmt(scoreOf(p));
-    ctx.save(); ctx.rotate(shipMode ? -(p.heading || p.ang || 0) : 0);
+    ctx.save(); ctx.rotate(shipMode ? -(p.aim || 0) : 0);
     if (r >= 30) {
       const fs = clamp(r * .27, 9, 17);
       ctx.font = '700 ' + fs + 'px Playfair Display, Georgia, serif';
@@ -2417,16 +2407,21 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     for (const p of aliveList()) {
       p.shotCd = (p.shotCd || 0) - dt;
       if (p.shotCd > 0) continue;
-      const t = nearestEnemy(p, aliveList(), 420); if (!t) continue;
-      p.shotCd = .55;
+      const back = p.lastAtk && p.lastAtk.alive && p.lastAtk !== p ? p.lastAtk : null;
+      const t = back || nearestEnemy(p, aliveList(), 460); if (!t) continue;
+      p.shotCd = .45;
       const a = Math.atan2(t.y - p.y, t.x - p.x);
-      shots.push({ x: p.x, y: p.y, vx: Math.cos(a) * 280, vy: Math.sin(a) * 280, life: .7, owner: p, col: '#9fe8ff' });
+      p.aim = a;
+      const cs = Math.cos(a), sn = Math.sin(a);
+      [-0.42, 0.42].forEach(off => {
+        shots.push({ x: p.x + cs * p.r * 1.35 - sn * p.r * off, y: p.y + sn * p.r * 1.35 + cs * p.r * off, vx: cs * 320, vy: sn * 320, life: .65, owner: p, col: '#ffd23f' });
+      });
     }
     for (let i = shots.length - 1; i >= 0; i--) {
       const s = shots[i]; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       let hit = null;
       for (const q of aliveList()) if (q !== s.owner && Math.hypot(q.x - s.x, q.y - s.y) < q.r + 6) { hit = q; break; }
-      if (hit) { siphon(s.owner, hit, 0.02); shots.splice(i, 1); continue; }
+      if (hit) { hit.lastAtk = s.owner; siphon(s.owner, hit, 0.02); shots.splice(i, 1); continue; }
       if (s.life <= 0) shots.splice(i, 1);
     }
   }
