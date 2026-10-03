@@ -759,7 +759,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- STAR WAR ship mode: final round / quick match. Bubbles become ships, no blades, they shoot. ---------- */
   let shipMode = false, warTimer = null, laserAt = 0;
-  const shots = [];
+  const shots = []; let shotsFired = 0, shotsHit = 0;
+  let shipCrowdScale = 1, shipDetail = true;   // airframe shrinks as the crowd grows (full size up to 10 ships, smaller above) so names + pictures stay readable
+  window.__fxShots = () => ({ fired: shotsFired, hit: shotsHit, flying: shots.length });
+  const SHOT_ASSIST = .4;   // share of tap-shots that swing toward a random enemy (the rest go to a random spot, so many MISS)
   const SHIP_AUTO = Q.get('ship') !== '0';          // ?ship=0 turns the automatic final-round twist off
   function spaceWarMusic(on) {
     if (warTimer) { clearInterval(warTimer); warTimer = null; }
@@ -784,15 +787,30 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     spaceWarMusic(on);
     if (on) for (const p of players) { p.shotCd = rf(.1, .5); p.shipMax = Math.max(1, p.points); }
     if (!quiet) {
-      try { feed(on ? '🚀 STAR WAR: no blades, ships shoot!' : '🫧 Bubbles are back', 'join'); } catch (e) {}
-      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'Final round: no blades. Ships shoot. Gifts = firepower!' : 'Blades are back', 'big', 2.6); } catch (e) {}
+      try { feed(on ? '🚀 STAR WAR: tap to fire your ship!' : '🫧 Bubbles are back', 'join'); } catch (e) {}
+      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'No blades. TAP to fire your ship. Shots can miss. Gifts = firepower!' : 'Blades are back', 'big', 2.6); } catch (e) {}
     }
   }
   window.__setShipMode = setShipMode;
   function fireShot(p, a, dmgMul, col) {
     const cs = Math.cos(a), sn = Math.sin(a);
     if (shots.length > 220) return;
+    shotsFired++;
     shots.push({ x: p.x + cs * p.r * 1.2, y: p.y + sn * p.r * 1.2, vx: cs * 430, vy: sn * 430, life: .8, owner: p, hue: p.hue, dmg: (3.2 + p.blades * 1.1) * mult(p) * (dmgMul || 1), col: col || '' });
+  }
+  function shipTarget(p) {   // TikTok gives no tap position, so each tap picks a spot: sometimes near an enemy, otherwise anywhere in the arena
+    const others = aliveList().filter(q => q !== p);
+    if (others.length && Math.random() < SHOT_ASSIST) { const q = pick(others); return { x: q.x + rf(-1, 1) * 60, y: q.y + rf(-1, 1) * 60 }; }
+    return { x: rf(ARENA.x0, ARENA.x1), y: rf(ARENA.y0, ARENA.y1) };
+  }
+  function shipTap(p) {   // a TAP fires this player's ship toward a target ring: it hits if something is in the way, otherwise it misses
+    if (!shipMode || !p.alive || (p.shotCd || 0) > 0) return;
+    const t = shipTarget(p), a = Math.atan2(t.y - p.y, t.x - p.x);
+    p.aim = a; p.tapAimT = 1.1; p.shotCd = Math.max(.28, .55 - p.blades * .03);
+    fireShot(p, a - .06, 1); fireShot(p, a + .06, 1);
+    p.vx -= Math.cos(a) * 28; p.vy -= Math.sin(a) * 28; p.muzzle = .1;
+    ring(t.x, t.y, 'hsl(' + p.hue + ',100%,72%)', 16, .35, 2);
+    if (time - laserAt > .09) { laserAt = time; sfx.laser(); }
   }
   function shipSalvo(p, n, ring) {   // gifts = firepower
     if (!shipMode || !p.alive) return;
@@ -805,18 +823,20 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   function updateShips(dt) {
     if (!shipMode) { if (shots.length) shots.length = 0; return; }
     const alive = aliveList();
+    shipCrowdScale = alive.length <= 10 ? 1 : Math.max(.7, 1 - (alive.length - 10) * .02); shipDetail = alive.length <= 20;
     for (const p of alive) {
       p.shipMax = Math.max(p.shipMax || 1, p.points);
-      p.shotCd = (p.shotCd || 0) - dt;
+      p.shotCd = (p.shotCd || 0) - dt; p.tapAimT = (p.tapAimT || 0) - dt;
       const t = nearestEnemy(p, alive, 620);
-      if (t) {   // turn smoothly toward the target
+      if (p.tapAimT > 0) { /* holding the aim of the last tap shot */ }
+      else if (t) {   // turn smoothly toward the target
         const want = Math.atan2(t.y - p.y, t.x - p.x);
         let d = want - (p.aim || 0); d = Math.atan2(Math.sin(d), Math.cos(d));
         p.aim = (p.aim || 0) + d * Math.min(1, dt * 9);
       } else p.aim = (p.aim || 0) + Math.atan2(p.vy, p.vx) * 0 + dt * .6;
-      if (p.shotCd > 0 || !t) continue;
-      p.shotCd = Math.max(.28, .55 - p.blades * .03);
-      const a = p.aim;
+      if (!p.filler || p.shotCd > 0 || !t) continue;   // real viewers shoot only when THEY tap; the starter ships keep firing on their own
+      p.shotCd = Math.max(.28, .55 - p.blades * .03) * 1.8;
+      const a = p.aim + rf(-.3, .3);
       fireShot(p, a - .06, 1); fireShot(p, a + .06, 1);
       p.vx -= Math.cos(a) * 28; p.vy -= Math.sin(a) * 28; p.muzzle = .1;
       if (time - laserAt > .09) { laserAt = time; sfx.laser(); }   // throttled so a crowd doesn't buzz
@@ -826,7 +846,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       let hit = null;
       for (const q of alive) if (q.alive && q !== s.owner && Math.hypot(q.x - s.x, q.y - s.y) < q.r + 5) { hit = q; break; }
       if (hit) {
-        shots.splice(i, 1);
+        shots.splice(i, 1); shotsHit++;
         if (hit.shield > 0) { spark(s.x, s.y, '#9fe8ff', 3, 130, .25); continue; }
         spark(s.x, s.y, '#ffd9a0', 3, 150, .25); hit.vx += s.vx * .04; hit.vy += s.vy * .04;
         hurt(hit, s.dmg, s.owner.alive ? s.owner : null, 'shot');
@@ -846,16 +866,47 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     ctx.restore();
   }
-  function drawShipParts(p, r) {   // wings + twin cannons, rotated to aim; drawn under the profile-picture cockpit
-    ctx.save(); ctx.rotate(p.aim || 0);
-    const hue = p.hue;
-    ctx.fillStyle = 'hsla(' + hue + ',55%,45%,.92)'; ctx.strokeStyle = '#d7e7f5'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(-r * .2, r * .8); ctx.lineTo(-r * 1.15, r * 1.35); ctx.lineTo(-r * .85, r * .15); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-r * .2, -r * .8); ctx.lineTo(-r * 1.15, -r * 1.35); ctx.lineTo(-r * .85, -r * .15); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#9aa7b5';
-    const k = (p.muzzle || 0) > 0 ? 1.18 : 1;
-    ctx.fillRect(r * .55, -r * .44, r * .75 * k, r * .16); ctx.fillRect(r * .55, r * .28, r * .75 * k, r * .16);
-    if ((p.muzzle || 0) > 0) { p.muzzle = Math.max(0, p.muzzle - .016); ctx.fillStyle = 'rgba(255,230,150,.9)'; ctx.beginPath(); ctx.arc(r * 1.35, -r * .36, r * .13, 0, TAU); ctx.arc(r * 1.35, r * .36, r * .13, 0, TAU); ctx.fill(); }
+  function drawShipParts(p, r) {   // F-15-style steel fighter seen from above: long nose, twin engines, trapezoid wings, tail planes. Gifters get a bigger airframe + more missiles.
+    const tier = p.gifted >= 100 ? 3 : p.gifted >= 20 ? 2 : p.gifted >= 1 ? 1 : 0;
+    const S = shipCrowdScale * (1 + Math.min(.25, Math.log10(1 + (p.gifted || 0)) * .1));
+    const fl = .75 + .25 * Math.sin(time * 38 + (p.id || 0) * 1.7);
+    const steel = tier >= 2 ? '#b2bcc6' : '#9ea9b4', steelD = '#69747f', steelDD = '#3a424b', edge = '#e1e8ee', ln = Math.max(1.2, r * .05);
+    ctx.save(); ctx.rotate(p.aim || 0); ctx.save(); ctx.scale(S, S);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = edge; ctx.lineWidth = ln;
+    const poly = (pts, fill) => { ctx.beginPath(); ctx.moveTo(pts[0][0] * r, pts[0][1] * r); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0] * r, pts[i][1] * r); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.stroke(); };
+    const missile = (x, y, len) => { ctx.fillStyle = '#d9e0e6'; ctx.fillRect((x - len) * r, (y - .045) * r, len * r, .09 * r); ctx.fillStyle = '#6f7983'; ctx.beginPath(); ctx.moveTo(x * r, (y - .045) * r); ctx.lineTo((x + .14) * r, y * r); ctx.lineTo(x * r, (y + .045) * r); ctx.closePath(); ctx.fill(); };
+    const fL = r * (.5 + .45 * fl + tier * .22);   // afterburner flames
+    for (const s of [-1, 1]) {
+      const fx = -r * 1.3, fy = s * r * .3;
+      ctx.fillStyle = 'rgba(255,165,70,.85)'; ctx.beginPath(); ctx.moveTo(fx, fy - r * .12); ctx.lineTo(fx - fL, fy); ctx.lineTo(fx, fy + r * .12); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(200,230,255,.95)'; ctx.beginPath(); ctx.moveTo(fx, fy - r * .06); ctx.lineTo(fx - fL * .55, fy); ctx.lineTo(fx, fy + r * .06); ctx.closePath(); ctx.fill();
+    }
+    ctx.strokeStyle = edge; ctx.lineWidth = ln;
+    for (const s of [-1, 1]) {
+      poly([[-.85, s * .4], [-1.4, s * 1.0], [-1.68, s * 1.0], [-1.3, s * .4]], steelD);   // tail planes
+      poly([[.55, s * .4], [-.4, s * 1.8], [-.82, s * 1.8], [-.95, s * .4]], steel);        // wings
+      if (shipDetail) {
+        ctx.strokeStyle = steelDD; ctx.lineWidth = ln * .7;
+        ctx.beginPath(); ctx.moveTo(-.55 * r, s * .5 * r); ctx.lineTo(-.7 * r, s * 1.75 * r); ctx.moveTo(.1 * r, s * .6 * r); ctx.lineTo(-.15 * r, s * 1.25 * r); ctx.stroke();
+        ctx.strokeStyle = edge; ctx.lineWidth = ln;
+        if (tier >= 1) missile(-.3, s * 1.9, .7);
+        if (tier >= 2) { missile(-.15, s * 1.35, .62); missile(-.15, s * 1.0, .62); }
+      }
+    }
+    if (tier >= 3 && shipDetail) for (const s of [-1, 1]) poly([[.5, s * .4], [.5, s * .55], [-.95, s * .55], [-.95, s * .4]], steelD);   // conformal fuel tanks
+    poly([[1.95, 0], [1.4, -.12], [.8, -.3], [-.2, -.44], [-1.1, -.44], [-1.25, -.3], [-1.25, .3], [-1.1, .44], [-.2, .44], [.8, .3], [1.4, .12]], steel);   // fuselage
+    ctx.fillStyle = steelD; ctx.beginPath(); ctx.moveTo(1.95 * r, 0); ctx.lineTo(1.55 * r, -.09 * r); ctx.lineTo(1.55 * r, .09 * r); ctx.closePath(); ctx.fill();   // radome
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = steelDD; ctx.fillRect(-1.4 * r, (s * .3 - .14) * r, .17 * r, .28 * r);   // engine nozzles
+      ctx.fillRect(.5 * r, (s * .27 - .04) * r, .5 * r, .08 * r);                                // air intakes
+      ctx.fillStyle = steelD; ctx.fillRect(-1.35 * r, (s * .47 - .03) * r, .6 * r, .06 * r);     // twin tails (top view)
+    }
+    ctx.fillStyle = '#1f252b';   // cannon barrels
+    const k = (p.muzzle || 0) > 0 ? 1.15 : 1;
+    ctx.fillRect(1.05 * r, -.19 * r, .5 * r * k, .05 * r); ctx.fillRect(1.05 * r, .14 * r, .5 * r * k, .05 * r);
+    if ((p.muzzle || 0) > 0) { p.muzzle = Math.max(0, p.muzzle - .016); ctx.fillStyle = 'rgba(255,238,170,.95)'; ctx.beginPath(); ctx.arc(1.62 * r, -.165 * r, r * .1, 0, TAU); ctx.arc(1.62 * r, .165 * r, r * .1, 0, TAU); ctx.fill(); }
+    ctx.restore();
+    ctx.strokeStyle = '#cfd8e0'; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); ctx.arc(0, 0, r * 1.02, 0, TAU); ctx.stroke();   // canopy rim around the avatar
     ctx.restore();
   }
   function drawShipHealth(p, r) {
@@ -1028,11 +1079,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.quadraticCurveTo(cx + s * R * .58, cy - R * .8, cx + s * R * .16, cy - R * .7);
       ctx.closePath(); ctx.fill(); ctx.stroke();
     }
-    const pulse = .8 + .2 * Math.sin(t * 9);
+    // glow pulse is only recomputed every other frame (shadowBlur is the most expensive canvas op; this halves its cost with no visible difference)
+    if (!drawMonster._pf || (drawMonster._pf = !drawMonster._pf)) drawMonster._pulse = .8 + .2 * Math.sin(t * 9);
+    const pulse = drawMonster._pulse || .8;
     for (const s of [-1, 1]) {
       const w = R * .26, hh = R * .17 * open, n = -s;   // n = direction of the inner corner
       ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(-s * .42);
-      ctx.shadowColor = '#ff1a0a'; ctx.shadowBlur = 46 * pulse;
+      ctx.shadowColor = '#ff1a0a'; ctx.shadowBlur = 26 * pulse;
       const eg = ctx.createRadialGradient(0, 0, 1, 0, 0, w);
       eg.addColorStop(0, '#fff6c0'); eg.addColorStop(.28, '#ffcf2e'); eg.addColorStop(.62, '#ff2a10'); eg.addColorStop(1, '#5a0000');
       ctx.fillStyle = eg; ctx.beginPath(); ctx.moveTo(-w, 0);
@@ -1273,8 +1326,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const q = parts[parts.length - 1]; q.max = rf(.3, .7); q.life = q.max;
     }
   }
-  function ring(x, y, color, max, life, width) { rings.push({ x, y, max, life, t: 0, color, width }); }
-  function floater(x, y, text, color, size) { floats.push({ x, y, text, color, size: size || 15, t: 0, dx: rf(-14, 14) }); }
+  function ring(x, y, color, max, life, width) { if (rings.length > 70) rings.shift(); rings.push({ x, y, max, life, t: 0, color, width }); }
+  function floater(x, y, text, color, size) { if (floats.length > 90) floats.shift(); floats.push({ x, y, text, color, size: size || 15, t: 0, dx: rf(-14, 14) }); }
   function shake(a) { if (!reduceMotion) shakeAmp = Math.max(shakeAmp, a); }
 
   /* ---------- HUD ---------- */
@@ -1515,7 +1568,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     setTimeout(() => { box.textContent = ''; }, 8500);
   }
   function resetBoard() {
-    purgeIdle(CFG.idleRoundReset); purgeInactive(CFG.resetActiveSecs);
+    for (const q of players.slice()) { if (q.alive && !q.permanent) vanish(q); }   // new session = clean slate: only the permanent starters stay, everyone else taps again to rejoin
     champion = null; championName = null; leader = null;
     const sp = STUDIO ? STUDIO_PTS : CFG.startPoints;
     for (const p of players) {
@@ -1526,7 +1579,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', p.r + 40, .7, 3); spark(p.x, p.y, '#fff', 8, 140, .6);
     }
     showCard('A NEW SESSION', 'SCORES RESET', 2400, 'fresh');
-    feed('♻️ New session: everyone starts again from 0', 'join'); sfx.crown();
+    feed('♻️ New session: scores reset to 0 — tap to join!', 'join'); sfx.crown();
     if (window.__resetPerk) setTimeout(window.__resetPerk, 1800);
   }
   /* ---------- Round-winner fireworks video (with sound) ---------- */
@@ -1615,7 +1668,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   window.__endRound = () => { if (round.phase === 'play') endRound(); };
   // host command #1x1: quick match = ONE round of 1 minute, one winner, then a full score reset and back to the normal 3-round format
-  // #1x1 never interrupts a running session: it is QUEUED and the quick match starts right after the current session's final champion.
+  // #1x1 starts immediately whenever the host types it.
   let quickQueued = false;
   function startQuickNow() {
     quickQueued = false;
@@ -1626,13 +1679,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     startRound();
     feed('⚡ Quick match: 1 minute, one winner!', 'gift');
   }
-  window.__fxQuick = () => {
-    if (SESSION_PLAN.length === 1) return 'already-quick';
-    if (quickQueued) return 'already-queued';
-    quickQueued = true;
-    feed('⚡ Quick match queued: starts after this session ends', 'gift');
-    try { banner('⚡ QUICK MATCH NEXT', 'Starts after this session', 'big', 2.2); } catch (err) {}
-    return 'queued';
+  window.__fxQuick = () => {   // #1x1 now starts RIGHT AWAY (restarts the board as a 1-minute quick match)
+    try { banner('⚡ QUICK MATCH', '1 minute · one winner', 'big', 2.2); } catch (err) {}
+    startQuickNow();
+    return 'started';
   };
 
   /* ---------- Events (public API) ---------- */
@@ -1644,6 +1694,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const name = String(e.user).slice(0, 16);
     const type = String(e.type || 'tap').toLowerCase();
     if (type === 'leave' || type === 'left') { const q = roster.get(name.toLowerCase()); if (q && !q.permanent) { vanish(q); feed('👋 ' + q.name + ' left', 'join'); } return; }
+    if (type === 'join' && !roster.has(name.toLowerCase())) return;   // just ENTERING the room does not create a bubble: viewers join only when they tap / like / comment / share / gift
     let p = roster.get(name.toLowerCase());
     if (p && p.filler && !e.bot) p.filler = false;
     if (!p) { p = joinPlayer(name, e.avatar, e.bot); if (!p) return; }
@@ -1670,6 +1721,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       p.vx += Math.cos(p.heading) * 22; p.vy += Math.sin(p.heading) * 22;
       if (time - p.lastFloat > .18) { p.lastFloat = time; floater(x, y, '+' + count, '#fff', 13); }
       sfx.tap();
+      if (shipMode) shipTap(p);
     } else if (type === 'comment') {
       addPoints(p, CFG.pts.comment);
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
@@ -1738,7 +1790,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (shipMode) shipSalvo(p, coins >= 100 ? 18 : Math.min(9, 2 + Math.floor(coins / 8)), coins >= 100);
     if (coins >= 20) giftAssist(p, coins, tier);   // 20+ coin gift: strike whichever enemy is nearest to the gifter's fighter
   }
+  let gaNext = 0;   // gift beams are staggered ~120ms apart so a burst of gifts doesn't animate all in one frame
   function giftAssist(p, coins, tier) {
+    const nowMs = performance.now(); gaNext = Math.max(gaNext, nowMs);
+    const delay = gaNext - nowMs; if (delay < 1500) gaNext += 120;
+    if (delay < 20) giftAssistNow(p, coins, tier); else setTimeout(() => giftAssistNow(p, coins, tier), Math.min(delay, 1500));
+  }
+  function giftAssistNow(p, coins, tier) {
     if (!p.alive) return;
     let target = null, best = Infinity;
     for (const q of aliveList()) {
@@ -1751,9 +1809,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const dx = target.x - p.x, dy = target.y - p.y, d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
     const c = 'hsl(' + p.hue + ',100%,70%)';
     sfx.laser();
-    for (let i = 0; i < 10; i++) {
-      const u = i / 9, bx = p.x + nx * best * u, by = p.y + ny * best * u;
-      setTimeout(() => spark(bx, by, c, 2, 60, .25), i * 12);
+    for (let i = 0; i < 7; i++) {
+      const u = i / 6, bx = p.x + nx * best * u, by = p.y + ny * best * u;
+      setTimeout(() => spark(bx, by, c, 2, 60, .25), i * 16);
     }
     setTimeout(() => {
       if (!target.alive) return;
