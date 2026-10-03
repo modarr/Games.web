@@ -2313,7 +2313,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   window.__defHero = defHero;
   /* adaptive pace: reads how the team is coping and eases off or pushes, live */
-  let iceClock = 0, iceNext = 0, freezeT = 0, rescueCd = 0, adapt = .8, pace = .8, deathLog = [], gameClock = 0, bombClock = 0, bombNext = 0;
+  let dangerCd = 8, dangerSeq = 0, iceClock = 0, iceNext = 0, freezeT = 0, rescueCd = 0, adapt = .8, pace = .8, deathLog = [], gameClock = 0, bombClock = 0, bombNext = 0;
   function defAdapt(dt, alive) {
     const n = alive.length, front = defFrontY;
     while (deathLog.length && time - deathLog[0] > 20) deathLog.shift();
@@ -2348,7 +2348,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function creatureDie(c, quiet) {
     if (c.dead) return;
-    if (c.kind === 'bomb') return c.ice ? iceBreak(c) : bombBlow(c);
+    if (c.kind === 'bomb') return c.power ? powerBreak(c) : c.ice ? iceBreak(c) : bombBlow(c);
     c.dead = true;
     const goo = GOO[c.look] || '110,14,12', col = 'rgb(' + goo + ')';
     splats.push({ x: c.x, y: c.y, r: c.r * (c.kind === 'boss' ? 1.6 : 1.1), rgb: goo, t: time, det: c.det }); if (splats.length > 70) splats.shift();
@@ -2361,16 +2361,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     } else if (!quiet && ok('cpop', 60)) sfx.hit(4);
   }
   /* ---- team bomb: a prize the team shoots down together ---- */
-  function defBomb(near, ice) {
+  function defBomb(near, ice, power) {
     if (round.phase !== 'play') return;
-    const n = aliveList().length, rescue = !!near && !ice;
+    const n = aliveList().length, rescue = !!near && !ice && !power;
     const hp = Math.round(clamp(Math.max((10 + 2 * n) * DEF_HARD * (rescue ? .6 : 1), teamDps * (rescue ? 3 : 5)), 8, 700));   // ~5s of team fire (rescue: ~3s)
     let x = rf(90, W - 90), y = FT() - 20;
     if (rescue) { x = 0; y = 0; for (const c of near) { x += c.x; y += c.y; } x = clamp(x / near.length, 70, W - 70); y = y / near.length; }
     const b = newCreature('bomb', 'bomb', x, rescue ? y : FT() - 20, hp, CREATURES.bomb.r, CREATURES.bomb.sp);
     b.hoverY = rescue ? clamp(y, FT() + 40, defFrontY - 120) : FT() + (defFrontY - FT()) * rf(.3, .45); b.life = rescue ? 12 : 25; b.ang = 0;
-    b.rescue = rescue; b.ice = !!ice; b.blastR = rescue ? 290 : 240; if (rescue) b.y = b.hoverY;
+    b.rescue = rescue; b.ice = !!ice; b.power = !!power; b.blastR = rescue ? 290 : 240; if (rescue) b.y = b.hoverY;
     horde.push(b);
+    if (power) { try { banner('⚡ POWER BUBBLE!', 'Shoot it: everyone gets power shots', 'big', 2.6); } catch (e) {} feed('⚡ A power bubble appeared! Shoot it for team power shots!', 'gift'); tone(880, 0, .15, 'triangle', .1, 1320); tone(1320, .12, .25, 'triangle', .1, 1760); return; }
     if (ice) { try { banner('❄️ ICE BALL!', 'Shoot it to freeze the horde for 5 seconds', 'big', 2.6); } catch (e) {} feed('❄️ An ice ball dropped! Shoot it to freeze everything!', 'gift'); tone(1568, 0, .2, 'sine', .08, 2093); tone(2093, .15, .3, 'sine', .07, 2637); return; }
     if (rescue) { try { banner('🆘 RESCUE BOMB!', 'Shoot it now to save the team', 'big', 2.4); } catch (e) {} feed('🆘 A rescue bomb dropped in front of the team! Shoot it!', 'gift'); }
     else { try { banner('💣 TEAM BOMB!', 'Shoot it together to blow up the horde', 'big', 2.6); } catch (e) {}
@@ -2384,8 +2385,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     c.x = clamp(c.x + Math.sin(time * .7 + c.ph) * 22 * dt, 60, W - 60);
     if (round.phase !== 'play') c.life = Math.min(c.life, .6);
     c.life -= dt; c.tickT = (c.tickT || 0) - dt;
-    if (c.tickT <= 0) { c.tickT = c.life < 5 ? .25 : .55; if (c.ice) tone(c.life < 5 ? 3136 : 2637, 0, .05, 'sine', .03); else tone(c.life < 5 ? 2400 : 1900, 0, .03, 'square', .035); }
-    if (c.life <= 0) { c.dead = true; spark(c.x, c.y, '#888', 14, 120, .5); if (round.phase === 'play') feed(c.ice ? '💧 The ice ball melted!' : '💨 The bomb fizzled out!', 'kill'); }
+    if (c.tickT <= 0) { c.tickT = c.life < 5 ? .25 : .55; if (c.ice || c.power) tone(c.life < 5 ? 3136 : 2637, 0, .05, 'sine', .03); else tone(c.life < 5 ? 2400 : 1900, 0, .03, 'square', .035); }
+    if (c.life <= 0) { c.dead = true; spark(c.x, c.y, '#888', 14, 120, .5); if (round.phase === 'play') feed(c.power ? '💨 The power bubble popped away!' : c.ice ? '💧 The ice ball melted!' : '💨 The bomb fizzled out!', 'kill'); }
   }
   function blast(x, y, R0, bossPct, big) {   // shared explosion: kills creatures in range, hurts a giant
     let n = 0;
@@ -2407,6 +2408,37 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     try { banner('💥 BOOM! ' + n + ' BLASTED', what + ' · +10 for everyone', 'big', 2.4); } catch (e) {}
     feed('💥 ' + what + ' blew up ' + n + ' creatures! +10 for everyone', 'gift');
   }
+  /* ---- flashing gift reminders on the sides when creatures cross the middle ---- */
+  let promptT = 0, promptCyc = 0;
+  const PROMPTS_EARLY = [[{ i: '💣', c: 5, t: 'BOMB', col: '#ffb347' }, { i: '❄️', c: 10, t: 'FREEZE', col: '#7fe3ff' }]];
+  const PROMPTS = [PROMPTS_EARLY[0], [{ i: '🍩', top: 'Doughnut', t: 'STRIKE', col: '#eaffff' }, { i: '🧴', top: 'Perfume', t: 'STORM', col: '#9fd8ff' }], [{ i: '💣', c: 20, t: 'BIG BOMB', col: '#ff7a3d' }, { i: '💥', c: 50, t: 'MEGA BOMB', col: '#ff3d81' }], [{ i: '❤️', top: 'Heart 100+', t: 'REVENGE', col: '#ff6a5a' }, { i: '❄️', c: 10, t: 'FREEZE', col: '#7fe3ff' }]];
+  function promptTick(dt) {
+    const mid = (FT() + defFrontY) / 2;
+    if (horde.some(c => !c.dead && c.kind !== 'bomb' && !(c.frozenT > 0) && c.y > mid)) promptT = 3;   // stays up 3s after the danger passes
+    else promptT = Math.max(0, promptT - dt);
+    promptCyc += dt;
+  }
+  function pill(x, y, w, h, p, a) {
+    ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(10,6,24,.82)'; ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, 14); else ctx.rect(x, y, w, h); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = p.col; ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '800 19px Rubik, system-ui, sans-serif'; ctx.fillStyle = '#ffd23f';
+    ctx.fillText(p.i + ' ' + (p.top || p.c + ' coins'), x + w / 2, y + h * .34);
+    ctx.font = '900 17px Rubik, system-ui, sans-serif'; ctx.fillStyle = p.col;
+    ctx.fillText('= ' + p.t, x + w / 2, y + h * .72);
+    ctx.globalAlpha = 1;
+  }
+  function drawGiftPrompt() {
+    if (promptT <= 0 || round.phase !== 'play') return;
+    const set = gameClock < 60 ? PROMPTS_EARLY[0] : PROMPTS[Math.floor(promptCyc / 3.5) % PROMPTS.length];
+    const a = Math.min(1, promptT) * (.6 + .4 * Math.abs(Math.sin(time * 5)));   // flashing
+    const w = 132, h = 58, y = (FT() + defFrontY) / 2 - h / 2;
+    pill(8, y, w, h, set[0], a); pill(W - w - 8, y, w, h, set[1], a);
+  }
+  window.__defPrompt = () => promptT;
+  window.__defPromptSet = () => { const s = gameClock < 60 ? PROMPTS_EARLY[0] : PROMPTS[Math.floor(promptCyc / 3.5) % PROMPTS.length]; return s.map(q => q.t); };
   /* ---- ice: freezes every creature on screen (new arrivals still come) ---- */
   const FREEZE_MIN = 10, FREEZE_MAX = 20;   // gifts of 10-19 coins = ice ball, frozen for as many seconds as coins
   function freezeAll(secs, who) {
@@ -2420,6 +2452,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     feed('❄️ ' + (who ? who + ' froze ' : 'Froze ') + n + ' creatures for ' + Math.round(secs) + ' seconds!', 'gift');
     return n;
   }
+  function powerBreak(c) {
+    c.dead = true;
+    spark(c.x, c.y, '#ffd23f', 40, 300, 1); ring(c.x, c.y, '#fff3a0', 260, .8, 6); flash = Math.max(flash, .35);
+    tone(523, 0, .2, 'triangle', .12, 1046); tone(784, .1, .3, 'triangle', .11, 1568);
+    try { banner('⚡ POWER UP!', 'Everyone fires power shots', 'big', 2.2); } catch (e) {}
+    let n = 0;
+    for (const p of aliveList()) { p.blueT = Math.max(p.blueT || 0, 10); n++;
+      for (let i = 0; i < 4; i++) setTimeout(() => { if (p.alive && round.phase === 'play') fireAt(p, defTarget(p), 'b', rf(-.12, .12)); }, i * 120); }
+    feed('⚡ Power up! ' + n + ' players got power shots for 10 seconds!', 'gift');
+  }
+  window.__defPowerNow = () => defBomb(null, false, true);
   function iceBreak(c) {
     c.dead = true;
     spark(c.x, c.y, '#bff6ff', 40, 300, 1); spark(c.x, c.y, '#fff', 20, 220, .7);
@@ -2559,6 +2602,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---- gifts = weapons ---- */
   /* ---- host player "Free": joins automatically, tap anywhere to play, shielded while 3+ are alive ---- */
   const FREE_ON = !/[?&]free=0/.test(location.search), FREE_NAME = 'Free';
+  window.__defFreeP = () => (typeof freeP !== 'undefined' ? freeP : null);
   let freeP = null, freeShieldWas = false;
   const PS_FLAG = (() => {   // Palestine flag drawn in code so it looks the same on every PC
     const c = document.createElement('canvas'); c.width = c.height = 120; const g = c.getContext('2d');
@@ -2609,7 +2653,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const burst = clamp(1 + Math.floor(coins / 5), 1, 10);
     for (let i = 0; i < burst; i++) setTimeout(() => { if (p.alive && round.phase === 'play') fireAt(p, defTarget(p), 'b', rf(-.12, .12)); }, i * 110);
     if (!wasBlue) floater(p.x, p.y - p.r - 10, '💠 POWER SHOTS', '#9fd8ff', 15);
-    if (coins >= FREEZE_MIN && coins < FREEZE_MAX) defGiftIce(p, coins); else defGiftBomb(p, coins);
+    const gn = String(giftName || '').toLowerCase();
+    const act = /doughnut|donut/.test(gn) ? 'strike' : /perfume/.test(gn) ? 'fw' : (/heart/.test(gn) && coins >= 100) ? 'rev' : null;
+    if (act && window.__defAct && window.__defAct(act, p, coins)) {}   // 🍩 Doughnut = STRIKE, 🧴 Perfume = STORM, ❤️ 100+ heart = REVENGE
+    else if (coins >= FREEZE_MIN && coins < FREEZE_MAX) defGiftIce(p, coins); else defGiftBomb(p, coins);
     // coins in the last 5 seconds decide the laser and the ultimate
     p.giftLog = (p.giftLog || []).filter(g => time - g[0] <= 5); p.giftLog.push([time, coins]);
     const sum = p.giftLog.reduce((s, g) => s + g[1], 0);
@@ -2632,7 +2679,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
 
   /* ---- host buttons (enemies only) ---- */
-  function defHostOrigin(h) { return h && h.alive ? h : { name: 'chillax', key: 'chillax', x: W / 2, y: defFrontY + 30, r: 22, alive: true, hue: 190 }; }
+  function defHostOrigin(h) { return h && h.alive ? h : { name: FREE_NAME, key: 'free_origin', x: W / 2, y: defFrontY + 30, r: 22, alive: true, hue: 190 }; }
   function defStrike(h) {
     let n = 0;
     for (const c of horde) {
@@ -2693,7 +2740,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   let defHad = false, defFailed = false;   // mission failed = the whole team got wiped out
   window.__defFailed = () => defFailed;
-  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; heroLvl = 0; defHad = false; defFailed = false; bossClock = 0; deathLog = []; rescueCd = 15; gBombs.length = 0; freezeT = 0; iceClock = 0; iceNext = 0; if (round.num <= 1) { gameClock = 0; bombClock = 0; bombNext = 0; adapt = .8; pace = .8; } }
+  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; heroLvl = 0; defHad = false; defFailed = false; bossClock = 0; deathLog = []; rescueCd = 15; dangerCd = 8; gBombs.length = 0; freezeT = 0; iceClock = 0; iceNext = 0; if (round.num <= 1) { gameClock = 0; bombClock = 0; bombNext = 0; adapt = .8; pace = .8; } }
   function defNextStage() {   // no break between stages: the fight keeps going, just harder
     const al = aliveList();
     for (const p of al) { addPoints(p, 50); floater(p.x, p.y - p.r - 8, '+50 🛡', '#7dff8a', 15); }
@@ -2725,6 +2772,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     try { tone(392, 0, .32, 'sawtooth', .13, 330); tone(330, .3, .32, 'sawtooth', .13, 262); tone(262, .62, .9, 'sawtooth', .15, 130); tone(98, .62, 1, 'sine', .22, 55); } catch (e) {}
   }
   window.__defFailSound = defFailSound;
+  function defBreach(c) {
+    defFailed = true; c.dead = true; shake(14); flash = Math.max(flash, .8);
+    try { banner('👹 THE GIANT GOT THROUGH', 'Mission failed', 'mega', 3); } catch (e) {}
+    feed('👹 The giant broke through the line. Mission failed.', 'kill');
+    endRound();
+  }
+  window.__defBossTo = y => { const b = horde.find(c => c.kind === 'boss' && !c.dead); if (b) { b.y = y; b.frozenT = 0; } return !!b; };
   function defCheckWipe(alive) {
     if (round.phase !== 'play' || defFailed) return;
     if (alive.length) { defHad = true; return; }
@@ -2765,6 +2819,11 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
       if (gameClock >= 60 && (iceClock += dt) >= iceNext && !horde.some(c => c.kind === 'bomb' && !c.dead)) { iceClock = 0; iceNext = rf(60, 90); defBomb(null, true); }
       gBombTick(dt);
+      promptTick(dt);
+      if ((dangerCd -= dt) <= 0 && promptT > 0 && !horde.some(c => c.kind === 'bomb' && !c.dead)) {   // creatures past the middle: send help
+        dangerCd = 20; const k = dangerSeq++ % 3;
+        if (k === 0) defBomb(null, false, true); else if (k === 1) defBomb(null, true); else defBomb();
+      }
     }
     dmgFrame = 0;
     defSound(dt);
@@ -2838,6 +2897,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
           else creatureDie(c, true);
           if (c.dead) break;
         }
+      }
+      if (c.kind === 'boss' && round.phase === 'play' && !defFailed) {
+        if (!c.warned && c.y > (FT() + defFrontY) / 2) { c.warned = true; try { banner('⚠️ STOP THE GIANT!', 'If it gets through, the game is over', 'big', 2.6); } catch (e) {} feed('⚠️ The giant crossed the middle! Kill it before it gets through!', 'kill'); sfx.horn && sfx.horn(); }
+        if (c.y > H - 12) { defBreach(c); break; }   // the giant made it all the way through
       }
       if (c.y > H + 60) c.dead = true;
     }
@@ -3313,9 +3376,26 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (a <= 0) return;
     ctx.save(); ctx.globalAlpha = a;
     const pr = R * (2.2 + .35 * Math.sin(time * (urgent ? 14 : 5)));
-    if (!c.ice) ctx.drawImage(BOMB_GLOW, x - pr, y - pr, pr * 2, pr * 2);
-    ctx.strokeStyle = c.ice ? 'rgba(190,245,255,' + (.5 + .4 * Math.sin(time * 6)) + ')' : 'rgba(255,215,90,' + (.5 + .4 * Math.sin(time * 6)) + ')'; ctx.lineWidth = 3;
+    if (!c.ice && !c.power) ctx.drawImage(BOMB_GLOW, x - pr, y - pr, pr * 2, pr * 2);
+    ctx.strokeStyle = c.power ? 'rgba(255,225,90,' + (.5 + .4 * Math.sin(time * 6)) + ')' : c.ice ? 'rgba(190,245,255,' + (.5 + .4 * Math.sin(time * 6)) + ')' : 'rgba(255,215,90,' + (.5 + .4 * Math.sin(time * 6)) + ')'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(x, y, R + 9 + 3 * Math.sin(time * 6), 0, TAU); ctx.stroke();
+    if (c.power) {   // power bubble: golden orb with a lightning bolt
+      ctx.translate(x, y);
+      ctx.fillStyle = cgrad('pow' + Math.round(R), () => { const g = ctx.createRadialGradient(-R * .35, -R * .35, R * .1, 0, 0, R);
+        g.addColorStop(0, '#fffbe0'); g.addColorStop(.5, '#ffd23f'); g.addColorStop(1, '#c86a00'); return g; });
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(R * .15, -R * .7); ctx.lineTo(-R * .35, R * .1); ctx.lineTo(-R * .02, R * .1); ctx.lineTo(-R * .15, R * .7); ctx.lineTo(R * .38, -R * .12); ctx.lineTo(R * .05, -R * .12); ctx.closePath(); ctx.fill();
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.restore();
+      if (Math.random() < .4) spark(x + rf(-R, R), y + rf(-R, R), '#fff3a0', 1, 40, .4);
+      if (c.hitT > 0) { ctx.globalAlpha = c.hitT * 5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, R + 2, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+      const w = 120, h = 9, bx = x - w / 2, by = y - R - 26;
+      ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, by, w * clamp(c.hp / c.max, 0, 1), h);
+      ctx.font = '800 13px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      const t = urgent ? 'SHOOT IT! ' + Math.ceil(c.life) + 's' : '⚡ SHOOT FOR POWER';
+      ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.strokeText(t, x, by - 3); ctx.fillStyle = '#fff3a0'; ctx.fillText(t, x, by - 3);
+      return;
+    }
     if (c.ice) {   // ice ball: frosty crystal orb with a snowflake
       ctx.translate(x, y);
       ctx.fillStyle = cgrad('ice' + Math.round(R), () => { const g = ctx.createRadialGradient(-R * .35, -R * .35, R * .1, 0, 0, R);
@@ -3499,6 +3579,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     FINE = horde.length < 30 && perfL === 0; sprBakeBudget = 1;
     for (const c of horde) if (!c.dead) drawCreature(c);
     drawGBombs();
+    drawGiftPrompt();
     // lasers
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     for (const p of players) {
@@ -4373,7 +4454,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   if (FILL_ON) {
     const start = [1];
-    const PERM = DEF ? ['chillax', 'dune.rider7', 'lulu_x3', 'sky_falcon'].map(n => ({ name: n, flag: randFlag() }))   // defense: regular players, random flags, always come back
+    const PERM = DEF ? (() => { const pool = ['maya.rose', 'jay_23', 'noor.k', 'leo.vibes', 'sami_99', 'zara.x', 'omar.ali7', 'lina_m', 'kev_otc', 'yasmin.7', 'danny.b', 'hana__', 'rayan.11', 'sofia_lu', 'adam.k', 'mira.j', 'tariq_88', 'ella.mae', 'yusuf.r', 'nina_xo'];
+        for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+        return pool.slice(0, 4).map(n => ({ name: n, flag: null })); })()   // defense: normal-looking players, no flags, always come back
       : STUDIO ? [{ name: 'chillax', flag: 'ps' }, { name: 'dune.rider7', flag: 'sa', dbl: true }, { name: 'lulu_x3', flag: 'kw' }, { name: 'sky_falcon', flag: 'qa' }] : [];
     PERM.forEach((who, i) => setTimeout(() => { const b = spawnFiller(1, 30, who.name, who.flag); if (b) { b.permanent = true; if (who.dbl) b.permanentDbl = true; } }, 250 + i * 160));
     if (!DEF) for (let i = PERM.length; i < FILL_N; i++) setTimeout(() => { if (!fillRetired) spawnFiller(start[i % start.length], rf(14, 60)); }, 250 + i * 160);
@@ -4397,7 +4480,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   /* ---------- STUDIO: chillax action buttons (host support) ---------- */
   if (STUDIO) {
-    const hostP = () => roster.get('chillax');
+    const hostP = () => (DEF && window.__defFreeP) ? window.__defFreeP() : roster.get('chillax');
     const cds = {};
     const ACTS = DEF ? [
       { k: 'strike', t: '⚡', n: 'STRIKE', cd: 3, fn: (h, pw = 1) => {
@@ -4447,6 +4530,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const GIFT_TIERS = [[1, 'strike'], [30, 'fw'], [100, 'rev']];
     const HUGE_GIFT = 500;   // this many coins or more fires every power at once
     const GIFT_LABEL = { strike: ['⚡', 'Rose', 1], fw: [DEF ? '⛈️' : '🎆', 'Doughnut', 30], rev: ['🔥', 'Hand Hearts', 100] };
+    if (DEF) window.__defAct = (k, p, coins) => {   // gift name -> button power, fired from the gifter
+      const a = ACTS.find(x => x.k === k); if (!a) return false;
+      const base = { strike: 30, fw: 20, rev: 100 }[k] || 1, pw = Math.min(4, 1 + Math.log2(Math.max(1, coins / base)) * 0.8);
+      const h = defHostOrigin(p && p.alive ? p : hostP());
+      try { a.fn(h, pw); } catch (e) { return false; }
+      return true;
+    };
     window.__studioGiftAction = (p, coins) => {
       if (!p || !p.alive) return;
       if (coins >= HUGE_GIFT) {
@@ -4472,7 +4562,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const b = document.createElement('button');
       b.style.cssText = 'flex:1 1 0;min-width:0;height:calc(var(--u)*6.4);pointer-events:auto;font:900 calc(var(--u)*' + (DEF ? 3.6 : 2.4) + ') system-ui;color:#fff;background:rgba(20,10,50,.9);border:calc(var(--u)*.4) solid #35e0ff;border-radius:calc(var(--u)*1.4);padding:0;cursor:pointer;line-height:1.1;text-align:center;box-shadow:0 0 calc(var(--u)*2.2) rgba(53,224,255,.55);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:calc(var(--u)*1.2);white-space:nowrap';
       const gl = GIFT_LABEL[a.k];
-      b.innerHTML = DEF ? '<span style="font-size:1.15em">' + a.t + '</span><span>' + a.n + '</span>'
+      b.innerHTML = DEF ? '<span style="font-size:1.1em">' + a.t + '</span><span>' + a.n + '</span><span style="font-size:1.05em;margin-left:.2em;filter:drop-shadow(0 0 4px #ffd23f)">' + ({ strike: '🍩', fw: '🧴', rev: '❤️' }[a.k] || '') + '</span>'
         : '<span>' + a.t + '</span><span style="font-size:.8em">' + a.n + '</span><span style="font-size:.7em;color:#ffd23f">' + gl[2] + '+🪙</span>';
       const fire = () => {
         const h = DEF ? defHostOrigin(hostP()) : hostP(), now = performance.now() / 1000;
