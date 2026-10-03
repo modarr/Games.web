@@ -1517,7 +1517,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     setTimeout(() => { box.textContent = ''; }, 8500);
   }
   function resetBoard() {
-    purgeIdle(CFG.idleRoundReset); purgeInactive(CFG.resetActiveSecs);
+    for (const q of players.slice()) { if (q.alive && !q.permanent) vanish(q); }   // new session = clean slate: only the permanent starters stay, everyone else taps again to rejoin
     champion = null; championName = null; leader = null;
     const sp = STUDIO ? STUDIO_PTS : CFG.startPoints;
     for (const p of players) {
@@ -1528,7 +1528,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ring(p.x, p.y, 'hsl(' + p.hue + ',100%,70%)', p.r + 40, .7, 3); spark(p.x, p.y, '#fff', 8, 140, .6);
     }
     showCard('A NEW SESSION', 'SCORES RESET', 2400, 'fresh');
-    feed('♻️ New session: everyone starts again from 0', 'join'); sfx.crown();
+    feed('♻️ New session: scores reset to 0 — tap to join!', 'join'); sfx.crown();
     if (window.__resetPerk) setTimeout(window.__resetPerk, 1800);
   }
   /* ---------- Round-winner fireworks video (with sound) ---------- */
@@ -1643,6 +1643,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const name = String(e.user).slice(0, 16);
     const type = String(e.type || 'tap').toLowerCase();
     if (type === 'leave' || type === 'left') { const q = roster.get(name.toLowerCase()); if (q && !q.permanent) { vanish(q); feed('👋 ' + q.name + ' left', 'join'); } return; }
+    if (type === 'join' && !roster.has(name.toLowerCase())) return;   // just ENTERING the room does not create a bubble: viewers join only when they tap / like / comment / share / gift
     let p = roster.get(name.toLowerCase());
     if (p && p.filler && !e.bot) p.filler = false;
     if (!p) { p = joinPlayer(name, e.avatar, e.bot); if (!p) return; }
