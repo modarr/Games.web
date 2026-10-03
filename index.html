@@ -556,7 +556,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   const MODE = 'studio';
   const TEST = MODE === 'test';
   const STUDIO = MODE === 'studio';
-  const DEF = Q.get('mode') !== 'blades';   // army defense mode (default); ?mode=blades = old arena
+  const DEF = Q.get('mode') !== 'blades'; window.__DEF = DEF;   // army defense mode (default); ?mode=blades = old arena
   const DEF_TIPS = ['👆 Tap on the screen for more points', '🎁 Gift for strikes, more power and better weapons'];
   const OVERLAY = TEST ? Q.get('overlay') === '1' : Q.get('overlay') !== '0';
   const DEMO = TEST ? Q.get('demo') !== '0' : Q.get('demo') === '1';
@@ -1705,6 +1705,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const name = String(e.user).slice(0, 16);
     const type = String(e.type || 'tap').toLowerCase();
     if (type === 'leave' || type === 'left') { const q = roster.get(name.toLowerCase()); if (q && !q.permanent) { vanish(q); feed('👋 ' + q.name + ' left', 'join'); } return; }
+    if (DEF && type === 'join' && !e.bot) return;
+    if (DEF && type === 'comment' && e.text && /^\s*#/.test(String(e.text)) && window.__isHostName && window.__isHostName(e)) {   // host commands: run them, but the host account does not join as a bubble (the host plays as Free)
+      if (window.__fxChat) { try { window.__fxChat(e, null); } catch (err) {} } return;
+    }   // just entering the live is not enough: tap, comment, gift, share or follow to join the game
     let p = roster.get(name.toLowerCase());
     if (p && p.filler && !e.bot) p.filler = false;
     if (!p) { p = joinPlayer(name, e.avatar, e.bot); if (!p) return; }
@@ -2313,6 +2317,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   window.__defHero = defHero;
   /* adaptive pace: reads how the team is coping and eases off or pushes, live */
+  const freqF = () => [1, 1.8, 2.8][Math.min(3, Math.max(1, round.num || 1)) - 1];   // free items: round 1 most, round 2 fewer, round 3 fewest
   let dangerCd = 8, dangerSeq = 0, iceClock = 0, iceNext = 0, freezeT = 0, rescueCd = 0, adapt = .8, pace = .8, deathLog = [], gameClock = 0, bombClock = 0, bombNext = 0;
   function defAdapt(dt, alive) {
     const n = alive.length, front = defFrontY;
@@ -2438,6 +2443,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     pill(8, y, w, h, set[0], a); pill(W - w - 8, y, w, h, set[1], a);
   }
   window.__defPrompt = () => promptT;
+  window.__defFreq = () => ({ round: round.num, factor: freqF(), dangerCd: Math.round(dangerCd), iceNext: Math.round(iceNext), rescueCd: Math.round(rescueCd) });
   window.__defPromptSet = () => { const s = gameClock < 60 ? PROMPTS_EARLY[0] : PROMPTS[Math.floor(promptCyc / 3.5) % PROMPTS.length]; return s.map(q => q.t); };
   /* ---- ice: freezes every creature on screen (new arrivals still come) ---- */
   const FREEZE_MIN = 10, FREEZE_MAX = 20;   // gifts of 10-19 coins = ice ball, frozen for as many seconds as coins
@@ -2671,6 +2677,36 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     if (sum >= 500 && time - (p.ultAt || -99) > 5) { p.ultAt = time; defUltimate(p, sum); }
   }
+  /* ---- host chat commands: #freeze, #bomb, #weapon (only the host accounts reach this) ---- */
+  function findPlayer(word) {
+    const w = String(word || '').replace(/^@/, '').toLowerCase().trim(); if (!w) return null;
+    if (w === 'free' && typeof freeP !== 'undefined' && freeP && freeP.alive) return freeP;
+    const al = players.filter(q => q.alive);
+    return al.find(q => q.name.toLowerCase() === w) || al.find(q => q.name.toLowerCase().startsWith(w)) || al.find(q => q.name.toLowerCase().indexOf(w) !== -1) || null;
+  }
+  function giveWeapon(p, secs, lvl) {
+    lvl = clamp(lvl || 2, 1, LASER.length - 1);
+    p.blueT = Math.max(p.blueT || 0, secs);
+    p.laser = { t: 0, dur: secs, lvl: Math.max(lvl, p.laser && p.laser.t < p.laser.dur ? p.laser.lvl : 0), ang: -Math.PI / 2 };
+    sfx.zap(); ring(p.x, p.y, LASER[lvl].col, p.r + 50, .6, 5);
+    floater(p.x, p.y - p.r - 26, '🔫 WEAPON ' + secs + 's', LASER[lvl].col, 20);
+    try { banner('🔫 ' + String(p.name).toUpperCase(), 'got a laser weapon for ' + secs + ' seconds!', 'big', 2.4); } catch (e) {}
+    feed('🔫 ' + p.name + ' got a laser weapon for ' + secs + ' seconds!', 'gift');
+  }
+  window.__defCmd = (kind, rest) => {
+    if (round.phase !== 'play') return 'not playing';
+    const parts = String(rest || '').trim().split(/\s+/).filter(Boolean), num = parts.map(Number).find(n => n > 0);
+    const from = (typeof freeP !== 'undefined' && freeP && freeP.alive) ? freeP : aliveList()[0];
+    if (kind === 'freeze' || kind === 'ice') { const s = clamp(num || 5, 1, 30); freezeAll(s, FREE_NAME); return 'freeze ' + s; }
+    if (kind === 'bomb') { if (!from) return 'nobody alive'; const c = num || 50; defGiftBomb(from, c); return 'bomb ' + c; }
+    if (kind === 'weapon') {
+      const word = parts.find(x => isNaN(Number(x)));
+      const p = word ? findPlayer(word) : from;
+      if (!p) { feed('❓ No player called ' + word, 'join'); return 'no player'; }
+      giveWeapon(p, 10, num && num <= 4 ? num : 2); return 'weapon ' + p.name;
+    }
+    return 'unknown';
+  };
   function defUltimate(p, coins) {
     fireballs.push({ x: p.x, y: p.y, sx: p.x, sy: p.y, tx: W / 2, ty: (FT() + defFrontY) / 2, t: 0, dur: .9, owner: p, boom: false });
     sfx.meteor(); sfx.siren();
@@ -2740,13 +2776,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   let defHad = false, defFailed = false;   // mission failed = the whole team got wiped out
   window.__defFailed = () => defFailed;
-  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; heroLvl = 0; defHad = false; defFailed = false; bossClock = 0; deathLog = []; rescueCd = 15; dangerCd = 8; gBombs.length = 0; freezeT = 0; iceClock = 0; iceNext = 0; if (round.num <= 1) { gameClock = 0; bombClock = 0; bombNext = 0; adapt = .8; pace = .8; } }
+  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; heroLvl = 0; defHad = false; defFailed = false; bossClock = 0; deathLog = []; rescueCd = 15 * freqF(); dangerCd = 8 * freqF(); gBombs.length = 0; freezeT = 0; iceClock = 0; iceNext = 0; if (round.num <= 1) { gameClock = 0; bombClock = 0; bombNext = 0; adapt = .8; pace = .8; } }
   function defNextStage() {   // no break between stages: the fight keeps going, just harder
     const al = aliveList();
     for (const p of al) { addPoints(p, 50); floater(p.x, p.y - p.r - 8, '+50 🛡', '#7dff8a', 15); }
     round.num++; round.len = SESSION_PLAN[round.num - 1]; round.t = round.len;
+    dangerCd = 8 * freqF(); rescueCd = 15 * freqF(); iceClock = 0; iceNext = Math.max(iceNext, 30) * 1;   // new round: free items restart at this round's slower pace
     round.calledHalf = false; round.called30 = false; round.shrinkDone = true; round.monsterDone = true;
     heroLvl = 0;
+    dangerCd = 8 * freqF(); rescueCd = 15 * freqF(); iceClock = 0; iceNext = rf(60, 90) * freqF();   // fewer free items each round
     const last = round.num >= SESSION_PLAN.length;
     const top = defTop3(), md = ['🥇', '🥈', '🥉'];
     const tops = top.map((q, i) => md[i] + ' ' + q.name).join('  ');
@@ -2815,13 +2853,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       if (!hardMode && gameClock >= 120 && (bombClock += dt) >= bombNext && !horde.some(c => c.kind === 'bomb' && !c.dead)) { bombClock = 0; bombNext = rf(70, 100); defBomb(); }
       if (hardMode && (rescueCd -= dt) <= 0 && !horde.some(c => c.kind === 'bomb' && !c.dead)) {   // harder: a rescue bomb when the horde is halfway to the players
         const mid = FT() + (defFrontY - FT()) * .5, near = horde.filter(c => !c.dead && c.kind !== 'bomb' && c.y > mid);
-        if (near.length >= Math.max(4, Math.ceil(alive.length * .6))) { rescueCd = 40; defBomb(near); }
+        if (near.length >= Math.max(4, Math.ceil(alive.length * .6))) { rescueCd = 40 * freqF(); defBomb(near); }
       }
-      if (gameClock >= 60 && (iceClock += dt) >= iceNext && !horde.some(c => c.kind === 'bomb' && !c.dead)) { iceClock = 0; iceNext = rf(60, 90); defBomb(null, true); }
+      if (gameClock >= 60 && (iceClock += dt) >= iceNext && !horde.some(c => c.kind === 'bomb' && !c.dead)) { iceClock = 0; iceNext = rf(60, 90) * freqF(); defBomb(null, true); }
       gBombTick(dt);
       promptTick(dt);
       if ((dangerCd -= dt) <= 0 && promptT > 0 && !horde.some(c => c.kind === 'bomb' && !c.dead)) {   // creatures past the middle: send help
-        dangerCd = 20; const k = dangerSeq++ % 3;
+        dangerCd = 20 * freqF(); const k = dangerSeq++ % 3;
         if (k === 0) defBomb(null, false, true); else if (k === 1) defBomb(null, true); else defBomb();
       }
     }
@@ -5118,19 +5156,22 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const id = String(e.uid || e.user || '').replace(/^@/, '').toLowerCase();
     return HOSTS.indexOf(id) !== -1;
   }
+  window.__isHostName = e => isHost(e);
   window.__fxChat = (e, who) => {
     try { if (e && e.text && isHost(e) && /^\s*#hero\b/i.test(String(e.text))) { if (window.__defHero) window.__defHero(); return; } } catch (err) {}
     try { if (e && e.text && isHost(e) && /^\s*#ship\s*$/i.test(String(e.text))) { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); return; } } catch (err) {}
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
+    const dcmd = txt.match(/^\s*#\s*(freeze|ice|bomb|weapon)\b\s*(.*)$/i);   // host only: #freeze [secs], #bomb [coins], #weapon [name] [level]
+    if (dcmd) { if (window.__defCmd) window.__defCmd(dcmd[1].toLowerCase(), dcmd[2]); return; }
     if (/^\s*#?\s*x\s*0\s*x\s*$/i.test(txt)) { if (window.__fxMonster) window.__fxMonster(); return; }
-    if (/^\s*#?\s*1\s*x\s*1\s*$/i.test(txt)) { if (window.__fxQuick) window.__fxQuick(); return; }
+    if (/^\s*#?\s*1\s*x\s*1\s*$/i.test(txt)) { if (!window.__DEF && window.__fxQuick) window.__fxQuick(); return; }
     const rank2 = txt.match(/#\s*(0[123]|[123]{2})\s*$/);
     if (rank2) { const d = rank2[1]; window.__fxShout(d[0] === '0' ? 'gift' : 'score', Number(d[1]), ''); return; }
     const so0101 = txt.match(/#\s*0101\s+(\S+)\s*(.*)/i);
     if (so0101) { window.__fxShout('name', so0101[1], so0101[2]); return; }
     const zero = txt.match(/#\s*(0{1,4})\b/);
-    if (zero) { fxAutoToggle(zero[1].length); return; }
+    if (zero) { if (window.__DEF) return; fxAutoToggle(zero[1].length); return; }
     const hash = txt.match(/#\s*([1-6])\b/);
     if (hash) { if (window.__fxAction) window.__fxAction(Number(hash[1]), who && who.key !== 'chillax' ? who : null); return; }
     if (/^\s*(#\s*99|#?\s*shrink)\s*$/i.test(txt)) { if (window.__fxShrink) window.__fxShrink(); return; }
