@@ -148,6 +148,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 @keyframes rpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
 #winbig{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(46,28,6,.62),rgba(4,2,10,.92));opacity:0;pointer-events:none;transition:opacity .8s ease;overflow:hidden}
 #winbig.on{opacity:1}
+#winbig .wname.top3{font-size:calc(var(--u)*6);line-height:1.3;display:flex;flex-direction:column;gap:calc(var(--u)*1.2)}
+#winbig .wname.top3 .t3r{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*2)}
+#winbig .wname.top3 .t3m{-webkit-text-fill-color:initial;color:initial;font-size:.9em}
+#winbig .wname.top3 .t3r1,#winbig .wname.top3 .t3r2{font-size:.78em}
+#winbig .wname.top3 .t3p{font-family:system-ui,sans-serif;font-size:.5em;font-weight:700;-webkit-text-fill-color:#ffe9a8;color:#ffe9a8}
+#winbig.fail{background:radial-gradient(circle at 50% 50%,rgba(70,6,6,.72),rgba(8,0,0,.94))}
+#winbig.fail .wfw,#winbig.fail .wrays,#winbig.fail .wconf,#winbig.fail .wcrown,#winbig.fail .wgift{display:none}
+#winbig.fail .wkick{color:#ffb0a8;text-shadow:none}
+#winbig.fail .wname{color:#ff3b30;text-shadow:0 0 18px rgba(255,30,20,.55);background:none;-webkit-text-fill-color:#ff3b30}
+#winbig.fail .wline{background:#ff3b30}
+#winbig.fail .wsub{color:#ffd6d2}
 #winbig .wfw{position:absolute;left:0;top:50%;width:100%;aspect-ratio:1/1;transform:translateY(-50%);object-fit:cover;mix-blend-mode:screen;pointer-events:none;opacity:0;transition:opacity .6s ease}
 #winbig.on .wfw{opacity:1}
 #winbig .wrays{position:absolute;left:50%;top:50%;width:230vmax;height:230vmax;margin:-115vmax 0 0 -115vmax;background:repeating-conic-gradient(from 0deg,rgba(255,214,102,.15) 0 6deg,transparent 6deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 42%);mask-image:radial-gradient(circle,#000 0,transparent 42%);animation:wspin 26s linear infinite}
@@ -1364,7 +1375,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const real = players.filter(p => (p.giftedTotal || 0) > 0).sort((a, b) => (b.giftedTotal || 0) - (a.giftedTotal || 0));
     const names = real.slice(0, 3).map(p => ({ name: p.name, hue: p.hue }));
     const fakeHues = [320, 195, 48];
-    for (let i = names.length; i < 3; i++) names.push({ name: FAKE_GIFTERS[i], hue: fakeHues[i] });
+    for (let i = names.length; i < 3; i++) names.push(DEF ? { name: '—', hue: 0 } : { name: FAKE_GIFTERS[i], hue: fakeHues[i] });   // defense: real gifters only
     const gsig = names.map(p => p.name + p.hue).join('|');
     if (gsig === renderGB._s) return; renderGB._s = gsig;
     gbEl.textContent = '';
@@ -1434,7 +1445,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
   const ROUND_SECS = STUDIO ? CFG.roundSecsStudio : CFG.roundSecs;
   const PLAN_Q = (Q.get('plan') || '').split(',').map(Number).filter(n => n >= 20).slice(0, 6);
-  let SESSION_PLAN = PLAN_Q.length ? PLAN_Q : [180, 120, 60];
+  let SESSION_PLAN = PLAN_Q.length ? PLAN_Q : (DEF ? [300, 180, 120] : [180, 120, 60]);   // defense: one 10-minute game in 3 stages
   const DEFAULT_PLAN = SESSION_PLAN.slice();   // 3 rounds: 3 min, 2 min, 1 min. Points carry over; scores reset after the last round
   const planLen = n => SESSION_PLAN[(n - 1) % SESSION_PLAN.length];
   const round = { t: planLen(1), len: planLen(1), phase: 'play', num: 1, calledHalf: false, called30: false };
@@ -1454,12 +1465,12 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.t -= dt;
     if (round.phase === 'play') {
       bar.classList.toggle('hot', round.t <= 10);
-      bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + ((championName || (leader && leader.name)) ? ' · 👑 ' + (championName || leader.name) : '');
+      bar.textContent = (DEF ? '⚔️ Stage ' + round.num + '/' + SESSION_PLAN.length : '⚔️ Round ' + round.num) + ' · ' + fmtT(round.t) + ' left' + ((championName || (leader && leader.name)) ? ' · 👑 ' + (championName || leader.name) : '');
       const half = round.len / 2;
       if (!round.shrinkDone && round.t <= SHRINK.warn + autoShrinkCloseSecs()) { round.shrinkDone = true; shrinkAutoStart(); }
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
-      if (!round.monsterDone && round.t <= Math.min(50, round.len * .5)) { round.monsterDone = true; startMonster(false); }
+      if (!DEF && !round.monsterDone && round.t <= Math.min(50, round.len * .5)) { round.monsterDone = true; startMonster(false); }
       // big catchy center countdown for the last 10 seconds, one punchy beat per second
       if (round.t <= 10 && round.t > 0) {
         const n = Math.ceil(round.t);
@@ -1472,7 +1483,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       } else if (cd.classList.contains('on')) {
         cd.classList.remove('on', 'beat'); cd.dataset.n = '';
       }
-      if (round.t <= 0) endRound();
+      if (round.t <= 0) { if (DEF && round.num < SESSION_PLAN.length && SESSION_PLAN.length > 1) defNextStage(); else endRound(); }
     } else {
       bar.classList.remove('hot');
       bar.textContent = '🏆 ' + ($('winkick').textContent || 'ROUND OVER');
@@ -1582,12 +1593,35 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.phase = 'gap'; round.t = 999; round.reset = false; round.cdn = 0;
     const winMs = Math.min(6500, Math.max(2500, winMs0()));
     const finalRound = round.num >= SESSION_PLAN.length; round.sessionDone = finalRound;
+    $('winname').classList.remove('top3');
+    if (DEF && window.__defFailed && window.__defFailed()) {   // whole team wiped: no winner, no celebration
+      champion = null; championName = null; round.sessionDone = true;   // a wipe ends the whole game; next one starts fresh at stage 1
+      $('winkick').textContent = 'STAGE ' + round.num;
+      $('winname').textContent = 'MISSION FAILED';
+      $('winsub').textContent = 'The horde broke through · nobody survived';
+      $('wgift').textContent = '';
+      bannerEl.className = ''; bannerEl.querySelector('.m').textContent = ''; bannerEl.querySelector('.s').textContent = '';   // clear any banner
+      $('winbig').classList.add('fail', 'on'); window.__defFailSound();
+      setTimeout(() => { $('winbig').classList.remove('on'); setTimeout(() => $('winbig').classList.remove('fail'), 700); nextUp(); }, 4200);
+      return;
+    }
     $('winkick').textContent = finalRound ? 'FINAL CHAMPION' : 'ROUND ' + round.num + ' WINNER';
     if (al.length) {
       const w = al[0];
       champion = w; championName = w.name;
+      if (DEF) {   // team game: celebrate the top 3 scores, not one winner
+        const top = defTop3(); if (top[0]) { champion = top[0]; championName = top[0].name; }
+        const medal = ['🥇', '🥈', '🥉'], escH = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        bannerEl.className = ''; bannerEl.querySelector('.m').textContent = ''; bannerEl.querySelector('.s').textContent = '';
+        $('winkick').textContent = finalRound ? 'TOP 3 DEFENDERS' : 'STAGE ' + round.num + ' · TOP 3';
+        $('winname').classList.add('top3');
+        $('winname').innerHTML = top.map((q, i) => '<div class="t3r t3r' + i + '"><span class="t3m">' + medal[i] + '</span><span class="t3n">' + escH(q.name) + '</span><span class="t3p">' + Math.round(scoreOf(q)).toLocaleString() + '</span></div>').join('');
+        $('winsub').textContent = al.filter(q => !q.filler).length + ' survived the horde' + (finalRound ? ' · new game next' : '');
+        feed('🏆 Top 3: ' + top.map((q, i) => medal[i] + ' ' + q.name).join('  '), 'gift');
+      } else {
       $('winname').textContent = w.name;
       $('winsub').textContent = Math.round(scoreOf(w)).toLocaleString() + ' points' + (finalRound ? ' · winner of everything' : ' · scores carry over');
+      }
       $('winbig').classList.add('on'); wgiftStart(); confetti(); fwVidPlay(winMs);
       ring(w.x, w.y, '#ffd23f', w.r + 90, 1.2, 6); spark(w.x, w.y, '#ffd23f', 40, 300, 1);
       sfx.horn(); shake(3);
@@ -1603,7 +1637,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
           spark(fx, fy, 'hsl(' + hue + ',100%,68%)', 30, 280, 1.2); ring(fx, fy, 'hsl(' + hue + ',100%,70%)', 80, .7, 3); sfx.gift(2);
         }, 300 + i * 260);
       }
-      feed(finalRound ? '🏆 ' + w.name + ' is the FINAL CHAMPION!' : '👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
+      if (!DEF) feed(finalRound ? '🏆 ' + w.name + ' is the FINAL CHAMPION!' : '👑 ' + w.name + ' won round ' + round.num + '!', 'gift');
       setTimeout(() => { $('winbig').classList.remove('on'); setTimeout(fwVidStop, 700); nextUp(); }, winMs);
     } else {
       $('winkick').textContent = 'ROUND OVER';
@@ -1628,7 +1662,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     wgiftStop();
     round.reset = true;
     round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false; round.monsterDone = false;
-    showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
+    showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? (DEF ? 'FINAL STAGE' : 'FINAL ROUND') : (DEF ? 'STAGE ' : 'ROUND ') + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
     showMotiv('⚔️ Round ' + round.num + ' has begun!');
     if (SHIP_AUTO && round.num >= SESSION_PLAN.length) setShipMode(true); else setShipMode(false, true);
     if (DEF) defStartRound();
@@ -2238,7 +2272,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
 
   function defOnJoin(p) {
-    p.defNew = true; p.base = p.points;
+    p.defNew = true; p.base = p.points; p.defJoinT = time;
     if (aliveList().filter(q => q !== p).length >= DEF_CAP) { p.alive = false; p.benched = true; p.outRound = -1; p.diedAt = time; }
   }
   function defFill() {
@@ -2263,15 +2297,30 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const det = []; for (let i = 0; i < 48; i++) det.push(Math.random());
     return { kind, look, x, y, hp, max: hp, r, sp, ph: rf(0, TAU), born: time, hitT: 0, ang: rf(-.3, .3), gait: rf(0, TAU), jaw: 0, det, trail: [] };
   }
+  let heroLvl = 0;   // #hero: live difficulty boost, resets each round
+  function defHero() {
+    if (!DEF || round.phase !== 'play') return;
+    heroLvl++;
+    const msg = heroLvl === 1 ? 'HERO MODE: the horde is tougher!' : 'HERO MODE x' + heroLvl + ': even tougher!';
+    try { banner('🔥 ' + msg, 'Fire faster!', 'mon', 2.4); } catch (e) {}
+    feed('🔥 ' + msg, 'kill'); sfx.rumble(); shake(6); flash = Math.max(flash, .25);
+    for (const c of horde) if (!c.dead && c.kind !== 'boss') { c.hp += 1; c.max = Math.max(c.max || c.hp, c.hp); }   // on-screen creatures get tougher too
+  }
+  window.__defHero = defHero;
   function spawnCreature(kind, x, look) {
     const C = CREATURES[kind], d = defDifficulty();
-    const hp = kind === 'beast' ? (Math.random() < Math.min(.6, .15 * d) ? 3 : 2) : C.hp;
-    horde.push(newCreature(kind, look || pick(C.looks), x != null ? x : rf(28, W - 28), FT() - 4, hp, C.r * rf(.9, 1.12), C.sp * (1 + .07 * (d - 1)) * rf(.85, 1.15)));
+    let hp = kind === 'beast' ? (Math.random() < Math.min(.6, .15 * d) ? 3 : 2) : C.hp;
+    hp += heroLvl;   // each #hero adds one extra hit to kill
+    const sp = C.sp * (1 + .07 * (d - 1)) * (1 + .18 * heroLvl) * rf(.85, 1.15);   // and makes them faster
+    horde.push(newCreature(kind, look || pick(C.looks), x != null ? x : rf(28, W - 28), FT() - 4, hp, C.r * rf(.9, 1.12), sp));
   }
+  const BOSS_ORDER = ['rat', 'spider', 'roach']; let bossSeq = 0, bossClock = 0;
   function defBoss() {
     if (round.phase !== 'play' || horde.some(c => c.kind === 'boss' && !c.dead)) return;
-    const n = aliveList().length, hp = Math.round((20 + 12 * round.num + 1.5 * n) * DEF_HARD);
-    const look = pick(CREATURES.boss.looks);
+    const n = aliveList().length;
+    const base = (30 + 20 * round.num + 4 * n) * DEF_HARD;            // never weak, grows with stage and active players
+    const hp = Math.round(Math.max(base, teamDps * (13 + 3 * round.num)));   // ~13-22 seconds of the team's real firepower
+    const look = BOSS_ORDER[bossSeq++ % BOSS_ORDER.length];   // a different nasty one each minute
     horde.push(newCreature('boss', look, W / 2, FT() - 10, hp, CREATURES.boss.r, CREATURES.boss.sp));
     sfx.rumble(); setTimeout(() => sfx.roar(), 500); shake(8); flash = Math.max(flash, .3);
     try { banner('🩸 A GIANT ' + LOOK_NAME[look] + ' IS COMING', 'Everyone fire!', 'mon', 2.4); } catch (e) {}
@@ -2289,8 +2338,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       feed('💀 The boss went down!', 'gift');
     } else if (!quiet && ok('cpop', 60)) sfx.hit(4);
   }
+  let dmgFrame = 0, teamDps = 0;   // how hard the team is shooting (smoothed over ~30s)
   function hurtCreature(c, dmg) {
-    if (c.dead) return; c.hp -= dmg; c.hitT = .12;
+    if (c.dead) return; c.hp -= dmg; c.hitT = .12; dmgFrame += Math.min(dmg, Math.max(0, c.hp + dmg));
     if (c.hp <= 0) creatureDie(c);
   }
   function defenderDie(p, c) {
@@ -2464,7 +2514,44 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (al.length) feed('🛡 ' + al.filter(q => !q.filler).length + ' survivors get +' + bonus + ' points!', 'gift');
     for (const c of horde) c.flee = true;
   }
-  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; }
+  let defHad = false, defFailed = false;   // mission failed = the whole team got wiped out
+  window.__defFailed = () => defFailed;
+  function defStartRound() { horde.length = 0; dShots.length = 0; fireballs.length = 0; splats.length = 0; defSpawnT = 1.4; heroLvl = 0; defHad = false; defFailed = false; bossClock = 0; }
+  function defNextStage() {   // no break between stages: the fight keeps going, just harder
+    const al = aliveList();
+    for (const p of al) { addPoints(p, 50); floater(p.x, p.y - p.r - 8, '+50 🛡', '#7dff8a', 15); }
+    round.num++; round.len = SESSION_PLAN[round.num - 1]; round.t = round.len;
+    round.calledHalf = false; round.called30 = false; round.shrinkDone = true; round.monsterDone = true;
+    heroLvl = 0;
+    const last = round.num >= SESSION_PLAN.length;
+    const top = defTop3(), md = ['🥇', '🥈', '🥉'];
+    const tops = top.map((q, i) => md[i] + ' ' + q.name).join('  ');
+    try { banner('⚔️ STAGE ' + round.num + (last ? ' · FINAL' : '') + ' · HARDER!', (tops ? 'Top 3: ' + tops : 'Survivors +50') + ' · ' + fmtT(round.len) + ' to go', 'big', 4); } catch (e) {}
+    if (tops) feed('🏆 Top 3 so far: ' + tops, 'gift');
+    feed('⚔️ Stage ' + round.num + ' — the horde gets stronger!', 'kill'); sfx.horn(); shake(4);
+  }
+  function defTop3() { return players.filter(q => !q.filler).sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 3); }
+  window.__defNextStage = defNextStage;
+  const IDLE_SECS = +(Q.get('idle') || 30);
+  let idleCheckT = 0;
+  function defIdleSweep() {   // anyone who hasn't tapped/commented/gifted in 30s leaves until they act again
+    for (const p of players.slice()) {
+      if (p.permanent || p.isFree) continue;
+      const last = Math.max(p.lastReal == null ? -1e9 : p.lastReal, p.defJoinT == null ? -1e9 : p.defJoinT);
+      if (time - last > IDLE_SECS) vanish(p);
+    }
+  }
+  function defFailSound() {   // falling "mission failed" tones
+    try { tone(392, 0, .32, 'sawtooth', .13, 330); tone(330, .3, .32, 'sawtooth', .13, 262); tone(262, .62, .9, 'sawtooth', .15, 130); tone(98, .62, 1, 'sine', .22, 55); } catch (e) {}
+  }
+  window.__defFailSound = defFailSound;
+  function defCheckWipe(alive) {
+    if (round.phase !== 'play' || defFailed) return;
+    if (alive.length) { defHad = true; return; }
+    if (!defHad) return;
+    defFailed = true; feed('💀 The horde broke through. Mission failed.', 'kill');
+    endRound();
+  }
 
   /* ---- simulation ---- */
   function gaitMul(c) {   // each creature moves its own way
@@ -2475,11 +2562,18 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (c.look === 'rat') return .78 + .45 * Math.max(0, s);   // scurries
     return 1;
   }
-  window.__def = () => ({ layout: () => aliveList().map(p => Math.round(p.tx)).sort((a,b)=>a-b), lastShot: () => dShots.length ? { vx: dShots[dShots.length-1].vx, vy: dShots[dShots.length-1].vy } : null, spawnAt: (x, y) => { horde.length = 0; spawnCreature('critter', x, 'beetle'); const c = horde[horde.length-1]; c.x = x; c.y = y; c.born = -9; c.sp = 0; c.spd = 0; c.ang = Math.PI/2; c.tagged = true; window.__tag = c; return 1; }, creature0: () => { const c = window.__tag; return c ? { x: Math.round(c.x), y: Math.round(c.y), hp: c.hp, dead: !!c.dead || horde.indexOf(c) < 0 } : null; }, free: () => freeP && { name: freeP.name, alive: freeP.alive, x: freeP.x, y: freeP.y, pts: Math.round(freeP.points), laser: freeP.laser ? freeP.laser.lvl : 0, blue: +(freeP.blueT || 0).toFixed(1), shield: freeShielded(freeP), flag: freeP.fb === PS_FLAG, alive_n: aliveList().length, shots: dShots.length, round: round.num }, killTo: (n) => { for (const p of aliveList()) { if (aliveList().length <= n) break; if (!p.isFree) defenderDie(p, null); } return aliveList().length; }, ram: (look) => { const f = freeP; spawnCreature('critter', f.x, look || 'rat'); const c = horde[horde.length - 1]; c.x = f.x; c.y = f.y - 4; c.born = -9; return horde.length; }, looks: (n) => { const out = {}, save = horde.splice(0); for (const [k, l] of [['critter','rat'],['critter','roach'],['beast','spider'],['shade','beetle'],['demon','centipede']]) { horde.length = 0; for (let i = 0; i < 40; i++) { spawnCreature(k, null, l); const c = horde[i]; c.y = rf(FT() + 40, defFrontY - 40); c.born = -9; } ctx.getImageData(0, 0, 1, 1); const t = performance.now(); for (let r = 0; r < n; r++) { for (const c of horde) drawCreature(c); ctx.getImageData(0, 0, 1, 1); } out[l] = +((performance.now() - t) / n / 40).toFixed(3); } const t = performance.now(); for (let r = 0; r < n * 40; r++) ctx.drawImage(EYE_GLOW, 100, 400, 12, 12); out.eyeImg = +((performance.now() - t) / n / 40).toFixed(3); horde.length = 0; horde.push(...save); return out; }, parts: (n) => { const T = {}, tm = (k, f) => { ctx.getImageData(0, 0, 1, 1); const t = performance.now(); for (let i = 0; i < n; i++) { f(); ctx.getImageData(0, 0, 1, 1); } T[k] = +((performance.now() - t) / n).toFixed(2); }; tm('update', () => defUpdate(1 / 60)); tm('field', () => drawField()); tm('splats', () => drawSplats()); tm('horde', () => { for (const c of horde) drawCreature(c); }); tm('bubbles', () => { for (const p of aliveList()) drawDefender(p); }); tm('full', () => defDraw()); T.parts = parts.length; T.n = horde.length; T.alive = aliveList().length; T.spr = sprCache.size; T.perf = { level: perfL, ema: +perfEma.toFixed(1), sprites: SPRITES, test: trialResult, log: perfLog.slice(-6) }; T.sizes = [...new Set(horde.map(c => c.look + Math.round(c.r * (LOOK_SCALE[c.look] || .85))))].join(); return T; }, bench: (n, nc) => { while (horde.length < nc) spawnCreature(pick(['critter','critter','beast','shade','demon']), null); for (const c of horde) { c.y = rf(FT() + 20, defFrontY - 20); c.born = -9; } const t0 = performance.now(); for (let i = 0; i < n; i++) { for (const c of horde) { if (c.y > defFrontY - 40) c.y = FT() + 30; c.hitT = i % 3 ? .1 : 0; } defUpdate(1 / 60); defDraw(); } return (performance.now() - t0) / n; }, zoo: (k, x, y, look) => { spawnCreature(k, x, look); const c = horde[horde.length - 1]; c.y = y; c.born = -9; return 1; }, horde: horde.map(c => [c.kind, Math.round(c.x), Math.round(c.y), +c.hp.toFixed(1)]), shots: dShots.length, front: defFrontY, y0: ARENA.y0 });
+  window.__def = () => ({ stage: () => ({ num: round.num, t: Math.round(round.t), len: round.len, phase: round.phase }), setT: (t) => { round.t = t; return t; }, bossNow: () => { bossClock = 60; }, boss: () => { const b = horde.find(c => c.kind === 'boss' && !c.dead); return b ? { look: b.look, hp: Math.round(b.hp) } : null; }, dps: () => +teamDps.toFixed(2), clearBoss: () => { for (const c of horde) if (c.kind === 'boss') creatureDie(c, true); }, names: () => aliveList().map(p => p.name), all: () => players.map(p => p.name), heroLvl: () => heroLvl, killAll: () => { for (const p of aliveList()) defenderDie(p, null); return aliveList().length; }, spawnOne: (look) => { spawnCreature('critter', W/2, look || 'rat'); const c = horde[horde.length-1]; return { hp: c.hp, sp: Math.round(c.sp) }; }, layout: () => aliveList().map(p => Math.round(p.tx)).sort((a,b)=>a-b), lastShot: () => dShots.length ? { vx: dShots[dShots.length-1].vx, vy: dShots[dShots.length-1].vy } : null, spawnAt: (x, y) => { horde.length = 0; spawnCreature('critter', x, 'beetle'); const c = horde[horde.length-1]; c.x = x; c.y = y; c.born = -9; c.sp = 0; c.spd = 0; c.ang = Math.PI/2; c.tagged = true; window.__tag = c; return 1; }, creature0: () => { const c = window.__tag; return c ? { x: Math.round(c.x), y: Math.round(c.y), hp: c.hp, dead: !!c.dead || horde.indexOf(c) < 0 } : null; }, free: () => freeP && { name: freeP.name, alive: freeP.alive, x: freeP.x, y: freeP.y, pts: Math.round(freeP.points), laser: freeP.laser ? freeP.laser.lvl : 0, blue: +(freeP.blueT || 0).toFixed(1), shield: freeShielded(freeP), flag: freeP.fb === PS_FLAG, alive_n: aliveList().length, shots: dShots.length, round: round.num }, killTo: (n) => { for (const p of aliveList()) { if (aliveList().length <= n) break; if (!p.isFree) defenderDie(p, null); } return aliveList().length; }, ram: (look) => { const f = freeP; spawnCreature('critter', f.x, look || 'rat'); const c = horde[horde.length - 1]; c.x = f.x; c.y = f.y - 4; c.born = -9; return horde.length; }, looks: (n) => { const out = {}, save = horde.splice(0); for (const [k, l] of [['critter','rat'],['critter','roach'],['beast','spider'],['shade','beetle'],['demon','centipede']]) { horde.length = 0; for (let i = 0; i < 40; i++) { spawnCreature(k, null, l); const c = horde[i]; c.y = rf(FT() + 40, defFrontY - 40); c.born = -9; } ctx.getImageData(0, 0, 1, 1); const t = performance.now(); for (let r = 0; r < n; r++) { for (const c of horde) drawCreature(c); ctx.getImageData(0, 0, 1, 1); } out[l] = +((performance.now() - t) / n / 40).toFixed(3); } const t = performance.now(); for (let r = 0; r < n * 40; r++) ctx.drawImage(EYE_GLOW, 100, 400, 12, 12); out.eyeImg = +((performance.now() - t) / n / 40).toFixed(3); horde.length = 0; horde.push(...save); return out; }, parts: (n) => { const T = {}, tm = (k, f) => { ctx.getImageData(0, 0, 1, 1); const t = performance.now(); for (let i = 0; i < n; i++) { f(); ctx.getImageData(0, 0, 1, 1); } T[k] = +((performance.now() - t) / n).toFixed(2); }; tm('update', () => defUpdate(1 / 60)); tm('field', () => drawField()); tm('splats', () => drawSplats()); tm('horde', () => { for (const c of horde) drawCreature(c); }); tm('bubbles', () => { for (const p of aliveList()) drawDefender(p); }); tm('full', () => defDraw()); T.parts = parts.length; T.n = horde.length; T.alive = aliveList().length; T.spr = sprCache.size; T.perf = { level: perfL, ema: +perfEma.toFixed(1), sprites: SPRITES, test: trialResult, log: perfLog.slice(-6) }; T.sizes = [...new Set(horde.map(c => c.look + Math.round(c.r * (LOOK_SCALE[c.look] || .85))))].join(); return T; }, bench: (n, nc) => { while (horde.length < nc) spawnCreature(pick(['critter','critter','beast','shade','demon']), null); for (const c of horde) { c.y = rf(FT() + 20, defFrontY - 20); c.born = -9; } const t0 = performance.now(); for (let i = 0; i < n; i++) { for (const c of horde) { if (c.y > defFrontY - 40) c.y = FT() + 30; c.hitT = i % 3 ? .1 : 0; } defUpdate(1 / 60); defDraw(); } return (performance.now() - t0) / n; }, zoo: (k, x, y, look) => { spawnCreature(k, x, look); const c = horde[horde.length - 1]; c.y = y; c.born = -9; return 1; }, horde: horde.map(c => [c.kind, Math.round(c.x), Math.round(c.y), +c.hp.toFixed(1)]), shots: dShots.length, front: defFrontY, y0: ARENA.y0 });
   function defUpdate(dt) {
     freeTick();
     if (parts.length > PERF_PARTS[perfL]) parts.splice(0, parts.length - PERF_PARTS[perfL]);   // cap sparks so big moments don't stutter
     const alive = aliveList(); crowd = alive.length;
+    defCheckWipe(alive); if (defFailed) return;
+    if (round.phase === 'play') {
+      if ((idleCheckT -= dt) <= 0) { idleCheckT = 1; defIdleSweep(); }
+      if ((bossClock += dt) >= 60 && !horde.some(c => c.kind === 'boss' && !c.dead)) { bossClock = 0; defBoss(); }   // a giant every minute
+      if (dt > 0) teamDps += (dmgFrame / dt - teamDps) * Math.min(1, dt / 30);
+    }
+    dmgFrame = 0;
     leader = null; let lp = -1; for (const p of alive) if (p.points > lp) { lp = p.points; leader = p; }
     checkCrown(leader);
     defRankAndLayout(alive);
@@ -2499,7 +2593,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const playing = round.phase === 'play';
     // spawning
     if (playing) {
-      const d = defDifficulty(), pf = clamp(Math.sqrt(Math.max(1, alive.length) / 12), .7, 2.6);
+      const d = defDifficulty(), pf = clamp(.6 + alive.length / 15, .7, 3.5);
       defSpawnT -= dt;
       if (defSpawnT <= 0 && horde.length < PERF_HORDE[perfL]) {
         defSpawnT = rf(.8, 1.25) * .8 / (d * pf);
@@ -3873,7 +3967,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- Filler fighters: the arena is never empty; they stay until >15 real viewers are playing ---------- */
   const FILL_ARG = Q.get('fillers');
-  const FILL_ON = FILL_ARG !== '0';
+  const FILL_ON = DEF ? FILL_ARG === '1' : FILL_ARG !== '0';   // defense: real, active players only (no fake fillers)
   const FILL_N = clamp(parseInt(FILL_ARG, 10) || (STUDIO ? 4 : 6), 1, 20);
   const FILL_REAL_MAX = STUDIO ? 10 : 15;
   const FILL_NAMES = ['Blaze', 'Turbo', 'Nova', 'Viper', 'Rocket', 'Comet', 'Blitz', 'Shadow', 'Ember', 'Storm', 'Ninja', 'Titan', 'Pixel', 'Zappy', 'Fang', 'Dash', 'Rogue', 'Cosmo', 'Hex', 'Jinx', 'Lynx', 'Orbit', 'Bolt', 'Fury', 'Echo', 'Glitch', 'Spike', 'Onyx'];
@@ -4594,6 +4688,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     return HOSTS.indexOf(id) !== -1;
   }
   window.__fxChat = (e, who) => {
+    try { if (e && e.text && isHost(e) && /^\s*#hero\b/i.test(String(e.text))) { if (window.__defHero) window.__defHero(); return; } } catch (err) {}
     try { if (e && e.text && isHost(e) && /^\s*#ship\s*$/i.test(String(e.text))) { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); return; } } catch (err) {}
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
