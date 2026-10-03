@@ -759,7 +759,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   /* ---------- STAR WAR ship mode: final round / quick match. Bubbles become ships, no blades, they shoot. ---------- */
   let shipMode = false, warTimer = null, laserAt = 0;
-  const shots = [];
+  const shots = []; let shotsFired = 0, shotsHit = 0;
+  window.__fxShots = () => ({ fired: shotsFired, hit: shotsHit, flying: shots.length });
+  const SHOT_ASSIST = .4;   // share of tap-shots that swing toward a random enemy (the rest go to a random spot, so many MISS)
   const SHIP_AUTO = Q.get('ship') !== '0';          // ?ship=0 turns the automatic final-round twist off
   function spaceWarMusic(on) {
     if (warTimer) { clearInterval(warTimer); warTimer = null; }
@@ -784,15 +786,30 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     spaceWarMusic(on);
     if (on) for (const p of players) { p.shotCd = rf(.1, .5); p.shipMax = Math.max(1, p.points); }
     if (!quiet) {
-      try { feed(on ? '🚀 STAR WAR: no blades, ships shoot!' : '🫧 Bubbles are back', 'join'); } catch (e) {}
-      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'Final round: no blades. Ships shoot. Gifts = firepower!' : 'Blades are back', 'big', 2.6); } catch (e) {}
+      try { feed(on ? '🚀 STAR WAR: tap to fire your ship!' : '🫧 Bubbles are back', 'join'); } catch (e) {}
+      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'No blades. TAP to fire your ship. Shots can miss. Gifts = firepower!' : 'Blades are back', 'big', 2.6); } catch (e) {}
     }
   }
   window.__setShipMode = setShipMode;
   function fireShot(p, a, dmgMul, col) {
     const cs = Math.cos(a), sn = Math.sin(a);
     if (shots.length > 220) return;
+    shotsFired++;
     shots.push({ x: p.x + cs * p.r * 1.2, y: p.y + sn * p.r * 1.2, vx: cs * 430, vy: sn * 430, life: .8, owner: p, hue: p.hue, dmg: (3.2 + p.blades * 1.1) * mult(p) * (dmgMul || 1), col: col || '' });
+  }
+  function shipTarget(p) {   // TikTok gives no tap position, so each tap picks a spot: sometimes near an enemy, otherwise anywhere in the arena
+    const others = aliveList().filter(q => q !== p);
+    if (others.length && Math.random() < SHOT_ASSIST) { const q = pick(others); return { x: q.x + rf(-1, 1) * 60, y: q.y + rf(-1, 1) * 60 }; }
+    return { x: rf(ARENA.x0, ARENA.x1), y: rf(ARENA.y0, ARENA.y1) };
+  }
+  function shipTap(p) {   // a TAP fires this player's ship toward a target ring: it hits if something is in the way, otherwise it misses
+    if (!shipMode || !p.alive || (p.shotCd || 0) > 0) return;
+    const t = shipTarget(p), a = Math.atan2(t.y - p.y, t.x - p.x);
+    p.aim = a; p.tapAimT = 1.1; p.shotCd = Math.max(.28, .55 - p.blades * .03);
+    fireShot(p, a - .06, 1); fireShot(p, a + .06, 1);
+    p.vx -= Math.cos(a) * 28; p.vy -= Math.sin(a) * 28; p.muzzle = .1;
+    ring(t.x, t.y, 'hsl(' + p.hue + ',100%,72%)', 16, .35, 2);
+    if (time - laserAt > .09) { laserAt = time; sfx.laser(); }
   }
   function shipSalvo(p, n, ring) {   // gifts = firepower
     if (!shipMode || !p.alive) return;
@@ -807,16 +824,17 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const alive = aliveList();
     for (const p of alive) {
       p.shipMax = Math.max(p.shipMax || 1, p.points);
-      p.shotCd = (p.shotCd || 0) - dt;
+      p.shotCd = (p.shotCd || 0) - dt; p.tapAimT = (p.tapAimT || 0) - dt;
       const t = nearestEnemy(p, alive, 620);
-      if (t) {   // turn smoothly toward the target
+      if (p.tapAimT > 0) { /* holding the aim of the last tap shot */ }
+      else if (t) {   // turn smoothly toward the target
         const want = Math.atan2(t.y - p.y, t.x - p.x);
         let d = want - (p.aim || 0); d = Math.atan2(Math.sin(d), Math.cos(d));
         p.aim = (p.aim || 0) + d * Math.min(1, dt * 9);
       } else p.aim = (p.aim || 0) + Math.atan2(p.vy, p.vx) * 0 + dt * .6;
-      if (p.shotCd > 0 || !t) continue;
-      p.shotCd = Math.max(.28, .55 - p.blades * .03);
-      const a = p.aim;
+      if (!p.filler || p.shotCd > 0 || !t) continue;   // real viewers shoot only when THEY tap; the starter ships keep firing on their own
+      p.shotCd = Math.max(.28, .55 - p.blades * .03) * 1.8;
+      const a = p.aim + rf(-.3, .3);
       fireShot(p, a - .06, 1); fireShot(p, a + .06, 1);
       p.vx -= Math.cos(a) * 28; p.vy -= Math.sin(a) * 28; p.muzzle = .1;
       if (time - laserAt > .09) { laserAt = time; sfx.laser(); }   // throttled so a crowd doesn't buzz
@@ -826,7 +844,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       let hit = null;
       for (const q of alive) if (q.alive && q !== s.owner && Math.hypot(q.x - s.x, q.y - s.y) < q.r + 5) { hit = q; break; }
       if (hit) {
-        shots.splice(i, 1);
+        shots.splice(i, 1); shotsHit++;
         if (hit.shield > 0) { spark(s.x, s.y, '#9fe8ff', 3, 130, .25); continue; }
         spark(s.x, s.y, '#ffd9a0', 3, 150, .25); hit.vx += s.vx * .04; hit.vy += s.vy * .04;
         hurt(hit, s.dmg, s.owner.alive ? s.owner : null, 'shot');
@@ -846,16 +864,33 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     }
     ctx.restore();
   }
-  function drawShipParts(p, r) {   // wings + twin cannons, rotated to aim; drawn under the profile-picture cockpit
+  function drawShipParts(p, r) {   // spaceship hull: swept wings, pointed nose, twin engines with flames, wingtip lights; drawn under the profile-picture cockpit
     ctx.save(); ctx.rotate(p.aim || 0);
-    const hue = p.hue;
-    ctx.fillStyle = 'hsla(' + hue + ',55%,45%,.92)'; ctx.strokeStyle = '#d7e7f5'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(-r * .2, r * .8); ctx.lineTo(-r * 1.15, r * 1.35); ctx.lineTo(-r * .85, r * .15); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-r * .2, -r * .8); ctx.lineTo(-r * 1.15, -r * 1.35); ctx.lineTo(-r * .85, -r * .15); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#9aa7b5';
+    const hue = p.hue, fl = .75 + .25 * Math.sin(time * 38 + (p.id || 0) * 1.7);
+    const hull = 'hsl(' + hue + ',22%,74%)', hullD = 'hsl(' + hue + ',38%,36%)', acc = 'hsl(' + hue + ',100%,62%)', ln = Math.max(1.5, r * .07);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {   // engine flames (orange outer, pale-blue core), flickering
+      const fx = -r * 1.05, fy = s * r * .4, L = r * (.65 + .55 * fl);
+      ctx.fillStyle = 'rgba(255,150,40,.9)'; ctx.beginPath(); ctx.moveTo(fx, fy - r * .14); ctx.lineTo(fx - L, fy); ctx.lineTo(fx, fy + r * .14); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(170,235,255,.95)'; ctx.beginPath(); ctx.moveTo(fx, fy - r * .07); ctx.lineTo(fx - L * .55, fy); ctx.lineTo(fx, fy + r * .07); ctx.closePath(); ctx.fill();
+    }
+    for (const s of [-1, 1]) {   // swept wings with colour stripe and blinking tip light
+      ctx.fillStyle = hullD; ctx.strokeStyle = '#e8f1fa'; ctx.lineWidth = ln;
+      ctx.beginPath(); ctx.moveTo(r * .6, s * r * .5); ctx.lineTo(-r * .3, s * r * 1.7); ctx.lineTo(-r * 1.05, s * r * 1.55); ctx.lineTo(-r * .85, s * r * .45); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = acc; ctx.lineWidth = Math.max(1.5, r * .09);
+      ctx.beginPath(); ctx.moveTo(r * .3, s * r * .75); ctx.lineTo(-r * .5, s * r * 1.55); ctx.stroke();
+      ctx.fillStyle = Math.sin(time * 6 + (s > 0 ? 0 : 3.14)) > 0 ? (s > 0 ? '#ff5a5a' : '#5aff8a') : '#1b222b';
+      ctx.beginPath(); ctx.arc(-r * .72, s * r * 1.56, r * .11, 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = hull; ctx.strokeStyle = '#e8f1fa'; ctx.lineWidth = ln;   // fuselage with a long pointed nose
+    ctx.beginPath(); ctx.moveTo(r * 1.8, 0); ctx.lineTo(r * .85, -r * .42); ctx.lineTo(-r * .95, -r * .62); ctx.lineTo(-r * 1.12, -r * .36); ctx.lineTo(-r * 1.12, r * .36); ctx.lineTo(-r * .95, r * .62); ctx.lineTo(r * .85, r * .42); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.moveTo(r * 1.8, 0); ctx.lineTo(r * 1.25, -r * .2); ctx.lineTo(r * 1.25, r * .2); ctx.closePath(); ctx.fill();   // nose cone
+    ctx.fillStyle = '#39424e'; ctx.fillRect(-r * 1.22, -r * .54, r * .2, r * .28); ctx.fillRect(-r * 1.22, r * .26, r * .2, r * .28);   // engine nozzles
+    ctx.fillStyle = '#9aa7b5';   // twin cannons
     const k = (p.muzzle || 0) > 0 ? 1.18 : 1;
-    ctx.fillRect(r * .55, -r * .44, r * .75 * k, r * .16); ctx.fillRect(r * .55, r * .28, r * .75 * k, r * .16);
-    if ((p.muzzle || 0) > 0) { p.muzzle = Math.max(0, p.muzzle - .016); ctx.fillStyle = 'rgba(255,230,150,.9)'; ctx.beginPath(); ctx.arc(r * 1.35, -r * .36, r * .13, 0, TAU); ctx.arc(r * 1.35, r * .36, r * .13, 0, TAU); ctx.fill(); }
+    ctx.fillRect(r * .55, -r * .5, r * .8 * k, r * .15); ctx.fillRect(r * .55, r * .35, r * .8 * k, r * .15);
+    if ((p.muzzle || 0) > 0) { p.muzzle = Math.max(0, p.muzzle - .016); ctx.fillStyle = 'rgba(255,230,150,.95)'; ctx.beginPath(); ctx.arc(r * 1.42, -r * .42, r * .14, 0, TAU); ctx.arc(r * 1.42, r * .42, r * .14, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#e8f1fa'; ctx.lineWidth = Math.max(2, r * .1); ctx.beginPath(); ctx.arc(0, 0, r * 1.02, 0, TAU); ctx.stroke();   // cockpit rim around the avatar
     ctx.restore();
   }
   function drawShipHealth(p, r) {
@@ -1670,6 +1705,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       p.vx += Math.cos(p.heading) * 22; p.vy += Math.sin(p.heading) * 22;
       if (time - p.lastFloat > .18) { p.lastFloat = time; floater(x, y, '+' + count, '#fff', 13); }
       sfx.tap();
+      if (shipMode) shipTap(p);
     } else if (type === 'comment') {
       addPoints(p, CFG.pts.comment);
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
