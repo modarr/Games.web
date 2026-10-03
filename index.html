@@ -780,111 +780,28 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       step++;
     }, 280);
   }
-
-  const beams = [];
-  function sideMid() { return (ARENA.x0 + ARENA.x1) / 2; }
-  function assignTeam(p, x) {
-    if (!p) return;
-    const mid = sideMid();
-    if (x != null && isFinite(x)) p.team = x < mid ? 'L' : 'R';
-    else {
-      const L = players.filter(q => q.alive && q.team === 'L' && !q.wingman).length;
-      const R = players.filter(q => q.alive && q.team === 'R' && !q.wingman).length;
-      p.team = L <= R ? 'L' : 'R';
-    }
-    p.hue = p.team === 'L' ? 205 : 6;
-    placeOnSide(p);
-  }
-  function placeOnSide(p) {
-    if (!p) return;
-    const mid = sideMid();
-    const left = p.team !== 'R';
-    p.team = left ? 'L' : 'R';
-    p.x = left ? rf(ARENA.x0 + 36, mid - 48) : rf(mid + 48, ARENA.x1 - 36);
-    p.y = rf(ARENA.y0 + 50, ARENA.y1 - 50);
-    p.aim = left ? 0 : Math.PI; p.heading = p.aim; p.vx = 0; p.vy = 0;
-    if (!p.points || p.points < 8) p.points = 28;
-  }
-  function ensureWing() {
-    const specs = [['Blue 1', 'L', 205], ['Blue 2', 'L', 222], ['Red 1', 'R', 4], ['Red 2', 'R', 18]];
-    specs.forEach((s, i) => {
-      let p = roster.get(s[0].toLowerCase());
-      if (!p) p = joinPlayer(s[0], null, true, true);
-      if (!p) return;
-      p.filler = true; p.wingman = true; p.permanent = true; p.alive = true; p.team = s[1]; p.hue = s[2];
-      p.points = Math.max(p.points || 0, 36); p.shotCd = .3 + i * .15;
-      placeOnSide(p);
-    });
-  }
-  function dropWing() {
-    for (const p of players.slice()) if (p.wingman) { p.permanent = false; p.wingman = false; vanish(p); }
-  }
-  function drawFront() {
-    const mid = sideMid();
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.setLineDash([7, 6]);
-    ctx.beginPath(); ctx.moveTo(mid, ARENA.y0 + 8); ctx.lineTo(mid, ARENA.y1 - 8); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.font = '700 13px system-ui'; ctx.textAlign = 'center';
-    ctx.fillStyle = '#7fd4ff'; ctx.fillText('LEFT', (ARENA.x0 + mid) / 2, ARENA.y0 + 22);
-    ctx.fillStyle = '#ff8aa8'; ctx.fillText('RIGHT', (mid + ARENA.x1) / 2, ARENA.y0 + 22);
-    ctx.restore();
-  }
-  window.__joinSide = (x, y) => {
-    const p = joinPlayer('Pilot ' + ri(10, 99), null, true);
-    if (!p) return null;
-    p.filler = false; assignTeam(p, x);
-    feed((p.team === 'L' ? '🔵 ' : '🔴 ') + p.name + ' joined the ' + (p.team === 'L' ? 'left' : 'right'), 'join');
-    return p;
-  };
-
   window.__shipMode = false;
   function setShipMode(on, quiet) {
     on = !!on; if (on === shipMode) return;
-    shipMode = on; window.__shipMode = on; shots.length = 0; beams.length = 0;
+    shipMode = on; window.__shipMode = on; shots.length = 0;
     spaceWarMusic(on);
-    if (on) {
-      shrinkStop(true);
-      ensureWing();
-      for (const p of players) {
-        p.shotCd = rf(.1, .5); p.shipMax = Math.max(1, p.points);
-        if (!p.team) assignTeam(p, p.x);
-        else placeOnSide(p);
-      }
-    } else dropWing();
+    if (on) for (const p of players) { p.shotCd = rf(.1, .5); p.shipMax = Math.max(1, p.points); }
     if (!quiet) {
-      try { feed(on ? '🚀 STAR WAR: two teams. Click left or right to join.' : '🫧 Bubbles are back', 'join'); } catch (e) {}
-      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'Left vs right. Gifts = glowing shots. 30+ = solid laser.' : 'Blades are back', 'big', 2.8); } catch (e) {}
+      try { feed(on ? '🚀 STAR WAR: tap to fire your ship!' : '🫧 Bubbles are back', 'join'); } catch (e) {}
+      try { banner(on ? '🚀 STAR WAR' : '🫧 BUBBLES', on ? 'No blades. TAP to fire your ship. Shots can miss. Gifts = firepower!' : 'Blades are back', 'big', 2.6); } catch (e) {}
     }
   }
   window.__setShipMode = setShipMode;
-  function shotKind(p) { const g = p.gifted || 0; return g >= 30 ? 'laser' : g > 0 ? 'orb' : 'bullet'; }
-  function fireBeam(p, a, dmgMul) {
-    const cs = Math.cos(a), sn = Math.sin(a), reach = 680;
-    let best = null, bd = reach;
-    for (const q of aliveList()) {
-      if (!q.alive || q === p || (p.team && q.team === p.team)) continue;
-      const dx = q.x - p.x, dy = q.y - p.y, proj = dx * cs + dy * sn;
-      if (proj < 8 || proj > reach) continue;
-      if (Math.abs(dx * sn - dy * cs) < q.r + 12 && proj < bd) { bd = proj; best = q; }
-    }
-    beams.push({ x1: p.x + cs * p.r * 1.1, y1: p.y + sn * p.r * 1.1, x2: p.x + cs * (best ? bd : reach), y2: p.y + sn * (best ? bd : reach), life: .28, col: '#b8f6ff' });
-    if (best) hurt(best, (3.2 + p.blades * 1.1) * mult(p) * (dmgMul || 1) * 2, p, 'shot');
-  }
   function fireShot(p, a, dmgMul, col) {
-    const kind = shotKind(p);
-    if (kind === 'laser') { fireBeam(p, a, dmgMul); return; }
     const cs = Math.cos(a), sn = Math.sin(a);
     if (shots.length > 220) return;
     shotsFired++;
-    const orb = kind === 'orb', mul = orb ? 2.5 : 1, spd = orb ? 340 : 430;
-    shots.push({ x: p.x + cs * p.r * 1.2, y: p.y + sn * p.r * 1.2, vx: cs * spd, vy: sn * spd, life: orb ? 1.15 : .8, owner: p, hue: p.hue, dmg: (3.2 + p.blades * 1.1) * mult(p) * (dmgMul || 1) * mul, col: col || (orb ? '#ffe27a' : ''), kind });
+    shots.push({ x: p.x + cs * p.r * 1.2, y: p.y + sn * p.r * 1.2, vx: cs * 430, vy: sn * 430, life: .8, owner: p, hue: p.hue, dmg: (3.2 + p.blades * 1.1) * mult(p) * (dmgMul || 1), col: col || '' });
   }
-  function shipTarget(p) {   // aim across the line at the other team
-    const others = aliveList().filter(q => q !== p && (!p.team || q.team !== p.team));
-    if (others.length && Math.random() < .72) { const q = pick(others); return { x: q.x + rf(-1, 1) * 28, y: q.y + rf(-1, 1) * 36 }; }
-    const mid = (ARENA.x0 + ARENA.x1) / 2;
-    return { x: p.team === 'R' ? rf(ARENA.x0, mid - 10) : rf(mid + 10, ARENA.x1), y: rf(ARENA.y0 + 20, ARENA.y1 - 20) };
+  function shipTarget(p) {   // TikTok gives no tap position, so each tap picks a spot: sometimes near an enemy, otherwise anywhere in the arena
+    const others = aliveList().filter(q => q !== p);
+    if (others.length && Math.random() < SHOT_ASSIST) { const q = pick(others); return { x: q.x + rf(-1, 1) * 60, y: q.y + rf(-1, 1) * 60 }; }
+    return { x: rf(ARENA.x0, ARENA.x1), y: rf(ARENA.y0, ARENA.y1) };
   }
   function shipTap(p) {   // a TAP fires this player's ship toward a target ring: it hits if something is in the way, otherwise it misses
     if (!shipMode || !p.alive || (p.shotCd || 0) > 0) return;
@@ -904,20 +821,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     sfx.laser(); sfx.laser();
   }
   function updateShips(dt) {
-    if (!shipMode) { if (shots.length) shots.length = 0; beams.length = 0; return; }
-    for (const p of players) {
-      if (p.alive || !p.respawnAt || time < p.respawnAt) continue;
-      p.alive = true; p.respawnAt = 0; p.points = Math.max(24, Math.min(90, (p.shipMax || 40) * .5)); p.shield = 1.5;
-      placeOnSide(p); feed('♻️ ' + p.name + ' is back', 'join');
-    }
+    if (!shipMode) { if (shots.length) shots.length = 0; return; }
     const alive = aliveList();
-    const mid = (ARENA.x0 + ARENA.x1) / 2;
-    for (const p of alive) if (p.team) {
-      if (p.team === 'L' && p.x > mid - 20) p.vx -= 120;
-      if (p.team === 'R' && p.x < mid + 20) p.vx += 120;
-      p.x = clamp(p.x, p.team === 'L' ? ARENA.x0 + 18 : mid + 18, p.team === 'L' ? mid - 18 : ARENA.x1 - 18);
-      if (!(p.tapAimT > 0)) p.aim = p.team === 'L' ? 0 : Math.PI;
-    }
     shipCrowdScale = alive.length <= 10 ? 1 : Math.max(.7, 1 - (alive.length - 10) * .02); shipDetail = alive.length <= 20;
     for (const p of alive) {
       p.shipMax = Math.max(p.shipMax || 1, p.points);
@@ -939,7 +844,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     for (let i = shots.length - 1; i >= 0; i--) {
       const s = shots[i]; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       let hit = null;
-      for (const q of alive) if (q.alive && q !== s.owner && !(s.owner && s.owner.team && q.team === s.owner.team) && Math.hypot(q.x - s.x, q.y - s.y) < q.r + (s.kind === 'orb' ? 14 : 5)) { hit = q; break; }
+      for (const q of alive) if (q.alive && q !== s.owner && Math.hypot(q.x - s.x, q.y - s.y) < q.r + 5) { hit = q; break; }
       if (hit) {
         shots.splice(i, 1); shotsHit++;
         if (hit.shield > 0) { spark(s.x, s.y, '#9fe8ff', 3, 130, .25); continue; }
@@ -949,30 +854,15 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       }
       if (s.life <= 0 || s.x < ARENA.x0 - 20 || s.x > ARENA.x1 + 20 || s.y < ARENA.y0 - 20 || s.y > ARENA.y1 + 20) shots.splice(i, 1);
     }
-    for (let i = beams.length - 1; i >= 0; i--) { beams[i].life -= dt; if (beams[i].life <= 0) beams.splice(i, 1); }
   }
   function drawShots() {
-    if (shipMode) drawFront();
-    if (!shots.length && !beams.length) return;
+    if (!shots.length) return;
     ctx.save(); ctx.lineCap = 'round';
     for (const s of shots) {
       const sp = Math.hypot(s.vx, s.vy) || 1, ux = s.vx / sp, uy = s.vy / sp;
-      if (s.kind === 'orb') {
-        ctx.fillStyle = 'rgba(255,220,90,.35)'; ctx.beginPath(); ctx.arc(s.x, s.y, 11, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#fff6c2'; ctx.beginPath(); ctx.arc(s.x, s.y, 5.5, 0, TAU); ctx.fill();
-      } else {
-        ctx.strokeStyle = s.col || 'hsla(' + s.hue + ',100%,72%,.95)'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - ux * 16, s.y - uy * 16); ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, TAU); ctx.fill();
-      }
-    }
-    for (const b of beams) {
-      ctx.globalAlpha = Math.min(1, b.life * 4);
-      ctx.strokeStyle = 'rgba(120,230,255,.35)'; ctx.lineWidth = 10;
-      ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
-      ctx.strokeStyle = '#f4fdff'; ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.strokeStyle = s.col || 'hsla(' + s.hue + ',100%,72%,.95)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - ux * 16, s.y - uy * 16); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, TAU); ctx.fill();
     }
     ctx.restore();
   }
@@ -1576,8 +1466,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   /* ---------- Rounds: countdown, anticipation, winner celebration ---------- */
   const ROUND_SECS = STUDIO ? CFG.roundSecsStudio : CFG.roundSecs;
   const PLAN_Q = (Q.get('plan') || '').split(',').map(Number).filter(n => n >= 20).slice(0, 6);
-  let SESSION_PLAN = PLAN_Q.length ? PLAN_Q : [180];
-  const DEFAULT_PLAN = SESSION_PLAN.slice();   // 1 round: 3 min, then the session is done
+  let SESSION_PLAN = PLAN_Q.length ? PLAN_Q : [180, 120, 60];
+  const DEFAULT_PLAN = SESSION_PLAN.slice();   // 3 rounds: 3 min, 2 min, 1 min. Points carry over; scores reset after the last round
   const planLen = n => SESSION_PLAN[(n - 1) % SESSION_PLAN.length];
   const round = { t: planLen(1), len: planLen(1), phase: 'play', num: 1, calledHalf: false, called30: false };
   function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -1598,10 +1488,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       bar.classList.toggle('hot', round.t <= 10);
       bar.textContent = '⚔️ Round ' + round.num + ' · ' + fmtT(round.t) + ' left' + ((championName || (leader && leader.name)) ? ' · 👑 ' + (championName || leader.name) : '');
       const half = round.len / 2;
-      if (!shipMode && !round.shrinkDone && round.t <= SHRINK.warn + autoShrinkCloseSecs()) { round.shrinkDone = true; shrinkAutoStart(); }
+      if (!round.shrinkDone && round.t <= SHRINK.warn + autoShrinkCloseSecs()) { round.shrinkDone = true; shrinkAutoStart(); }
       if (!round.calledHalf && round.t <= half) { round.calledHalf = true; callLeader('Halfway through the round! '); }
       if (!round.called30 && round.t <= 30) { round.called30 = true; callLeader('Thirty seconds left! '); }
-      if (!shipMode && !round.monsterDone && round.t <= Math.min(50, round.len * .5)) { round.monsterDone = true; startMonster(false); }
+      if (!round.monsterDone && round.t <= Math.min(50, round.len * .5)) { round.monsterDone = true; startMonster(false); }
       // big catchy center countdown for the last 10 seconds, one punchy beat per second
       if (round.t <= 10 && round.t > 0) {
         const n = Math.ceil(round.t);
@@ -1760,13 +1650,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.reset = true;
     purgeIdle(CFG.idleRoundReset); purgeInactive(CFG.resetActiveSecs);   // drop anyone no longer actually in the live
     if (round.sessionDone && quickQueued) { startQuickNow(); return; }
-    if (round.sessionDone) {
-      round.sessionDone = false; round.phase = 'done'; round.num = 0; SESSION_PLAN = DEFAULT_PLAN.slice();
-      try { $('roundbar').textContent = '🏆 Session over'; } catch (e) {}
-      feed('🏆 Session over. One round, done.', 'gift');
-      return;
-    }
-    for (const p of players) if (p.alive) { p.shield = Math.max(p.shield || 0, 4); p.graceT = Math.max(p.graceT || 0, 4); p.pulse = 1; }
+    if (round.sessionDone) { round.sessionDone = false; round.num = 0; SESSION_PLAN = DEFAULT_PLAN.slice(); resetBoard(); }
+    else { for (const p of players) if (p.alive) { p.shield = Math.max(p.shield || 0, 4); p.graceT = Math.max(p.graceT || 0, 4); p.pulse = 1; } }
     startRound();
   }
   function startRound() {
@@ -1776,7 +1661,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     round.num++; round.len = planLen(round.num); round.phase = 'play'; round.t = round.len; round.calledHalf = false; round.called30 = false; round.shrinkDone = false; round.monsterDone = false;
     showCard(SESSION_PLAN.length === 1 ? 'QUICK MATCH' : round.num >= SESSION_PLAN.length ? 'FINAL ROUND' : 'ROUND ' + round.num + ' OF ' + SESSION_PLAN.length, SESSION_PLAN.length === 1 ? 'ONE MINUTE · FIGHT!' : 'FIGHT!', 2300, 'fight'); sfx.horn(); sfx.gift(3); shake(3);
     showMotiv('⚔️ Round ' + round.num + ' has begun!');
-    // Star War is host-only (#starwar / #ship). A new round does not turn it on or off.
+    if (SHIP_AUTO && round.num >= SESSION_PLAN.length) setShipMode(true); else setShipMode(false, true);
     feed('⚔️ Round ' + round.num + ' begins!', 'join');
   }
 
@@ -1836,7 +1721,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       p.vx += Math.cos(p.heading) * 22; p.vy += Math.sin(p.heading) * 22;
       if (time - p.lastFloat > .18) { p.lastFloat = time; floater(x, y, '+' + count, '#fff', 13); }
       sfx.tap();
-      if (shipMode) { if (!p.team) assignTeam(p, e.x); shipTap(p); }
+      if (shipMode) shipTap(p);
     } else if (type === 'comment') {
       addPoints(p, CFG.pts.comment);
       p.text = e.text ? String(e.text).slice(0, 22) : '💬'; p.commentT = 2.6;
@@ -1989,7 +1874,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
   }
   function nearestEnemy(p, alive, maxD) {
     let best = null, bd = maxD || 1e9;
-    for (const q of alive) { if (q === p || !q.alive || (shipMode && p.team && q.team === p.team)) continue; const d = Math.hypot(q.x - p.x, q.y - p.y); if (d < bd) { bd = d; best = q; } }
+    for (const q of alive) { if (q === p || !q.alive) continue; const d = Math.hypot(q.x - p.x, q.y - p.y); if (d < bd) { bd = d; best = q; } }
     return best;
   }
   function kill(v, a) {
@@ -2004,13 +1889,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       feed('💥 ' + a.name + ' popped ' + v.name, 'kill');
     } else feed('💥 ' + v.name + ' popped', 'kill');
     sfx.pop(); shake(3 + Math.min(5, v.r / 14));
-    if (shipMode) {
-      v.respawnAt = time + 1.7;
-      ring(v.x, v.y, '#ffb347', v.r + 110, .7, 6); ring(v.x, v.y, '#fff', v.r + 50, .45, 3);
-      spark(v.x, v.y, '#ffb347', 30, 340, .9); spark(v.x, v.y, '#ff5c2a', 22, 260, .8); spark(v.x, v.y, '#fff', 10, 380, .5);
-      sfx.shipboom(); shake(7); flash = Math.max(flash, .18);
-    } else startVoid(v);
-    if (false && shipMode) {   // ship destroyed: proper explosion
+    startVoid(v);
+    if (shipMode) {   // ship destroyed: proper explosion
       ring(v.x, v.y, '#ffb347', v.r + 110, .7, 6); ring(v.x, v.y, '#fff', v.r + 50, .45, 3);
       spark(v.x, v.y, '#ffb347', 30, 340, .9); spark(v.x, v.y, '#ff5c2a', 22, 260, .8); spark(v.x, v.y, '#fff', 10, 380, .5);
       sfx.shipboom(); shake(7); flash = Math.max(flash, .18);
@@ -2470,7 +2350,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     shrink.phase = 'open'; shrink.t = 0; shrink.k0 = shrink.k;
   }
   function shrinkStep(dt) {
-    if (shipMode) { if (shrink.phase !== 'off') shrinkStop(true); return; }
     if (shrink.phase === 'off') return;
     shrink.t += dt;
     if (shrink.phase === 'warn' || shrink.phase === 'close') { shrink.beepT -= dt; if (shrink.beepT <= 0) { shrinkSiren(sirenVol()); shrink.beepT = 1.15; } }
@@ -2838,11 +2717,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     e.preventDefault();
     const r = cv.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
-    if (shipMode && window.__joinSide) {
-      const hit = aliveList().find(p => Math.hypot(p.x - x, p.y - y) <= p.r + 8);
-      if (hit) { event({ type: 'tap', user: hit.name, bot: true, x }); return; }
-      window.__joinSide(x, y); return;
-    }
     if (STUDIO) { const h = roster.get('chillax'); if (h && h.alive && grabOrb(h, x, y)) return; }
     for (const p of aliveList().sort((a, b) => a.r - b.r)) if (Math.hypot(p.x - x, p.y - y) <= p.r + 6) { event({ type: 'tap', user: p.name, bot: STUDIO }); break; }
   });
@@ -3688,7 +3562,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     return HOSTS.indexOf(id) !== -1;
   }
   window.__fxChat = (e, who) => {
-    try { if (e && e.text && isHost(e) && /^\s*#?\s*(ship|star\s*wars?)\s*$/i.test(String(e.text))) { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); return; } } catch (err) {}
+    try { if (e && e.text && isHost(e) && /^\s*#ship\s*$/i.test(String(e.text))) { if (window.__setShipMode) window.__setShipMode(!window.__shipMode); return; } } catch (err) {}
     if (!e || !e.text || !isHost(e)) return;
     const txt = String(e.text);
     if (/^\s*#?\s*x\s*0\s*x\s*$/i.test(txt)) { if (window.__fxMonster) window.__fxMonster(); return; }
@@ -3750,9 +3624,6 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       autoRow.appendChild(b);
     });
     bar.appendChild(autoRow);
-    { const sb = document.createElement('button'); sb.textContent = '🚀 Star War'; sb.style.marginTop = '4px';
-      sb.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); getAudio(); if (window.__setShipMode) window.__setShipMode(!window.__shipMode); });
-      bar.appendChild(sb); }
     { const eb = document.createElement('button'); eb.textContent = '🏁 End round now'; eb.style.marginTop = '4px';
       eb.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); getAudio(); if (window.__endRound) window.__endRound(); });
       bar.appendChild(eb); }
@@ -3761,6 +3632,5 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 })();
 
 </script>
-
 </body>
 </html>
