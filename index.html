@@ -1028,11 +1028,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       ctx.quadraticCurveTo(cx + s * R * .58, cy - R * .8, cx + s * R * .16, cy - R * .7);
       ctx.closePath(); ctx.fill(); ctx.stroke();
     }
-    const pulse = .8 + .2 * Math.sin(t * 9);
+    // glow pulse is only recomputed every other frame (shadowBlur is the most expensive canvas op; this halves its cost with no visible difference)
+    if (!drawMonster._pf || (drawMonster._pf = !drawMonster._pf)) drawMonster._pulse = .8 + .2 * Math.sin(t * 9);
+    const pulse = drawMonster._pulse || .8;
     for (const s of [-1, 1]) {
       const w = R * .26, hh = R * .17 * open, n = -s;   // n = direction of the inner corner
       ctx.save(); ctx.translate(cx + s * ex, ey); ctx.rotate(-s * .42);
-      ctx.shadowColor = '#ff1a0a'; ctx.shadowBlur = 46 * pulse;
+      ctx.shadowColor = '#ff1a0a'; ctx.shadowBlur = 26 * pulse;
       const eg = ctx.createRadialGradient(0, 0, 1, 0, 0, w);
       eg.addColorStop(0, '#fff6c0'); eg.addColorStop(.28, '#ffcf2e'); eg.addColorStop(.62, '#ff2a10'); eg.addColorStop(1, '#5a0000');
       ctx.fillStyle = eg; ctx.beginPath(); ctx.moveTo(-w, 0);
@@ -1273,8 +1275,8 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
       const q = parts[parts.length - 1]; q.max = rf(.3, .7); q.life = q.max;
     }
   }
-  function ring(x, y, color, max, life, width) { rings.push({ x, y, max, life, t: 0, color, width }); }
-  function floater(x, y, text, color, size) { floats.push({ x, y, text, color, size: size || 15, t: 0, dx: rf(-14, 14) }); }
+  function ring(x, y, color, max, life, width) { if (rings.length > 70) rings.shift(); rings.push({ x, y, max, life, t: 0, color, width }); }
+  function floater(x, y, text, color, size) { if (floats.length > 90) floats.shift(); floats.push({ x, y, text, color, size: size || 15, t: 0, dx: rf(-14, 14) }); }
   function shake(a) { if (!reduceMotion) shakeAmp = Math.max(shakeAmp, a); }
 
   /* ---------- HUD ---------- */
@@ -1615,7 +1617,7 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
 
   window.__endRound = () => { if (round.phase === 'play') endRound(); };
   // host command #1x1: quick match = ONE round of 1 minute, one winner, then a full score reset and back to the normal 3-round format
-  // #1x1 never interrupts a running session: it is QUEUED and the quick match starts right after the current session's final champion.
+  // #1x1 starts immediately whenever the host types it.
   let quickQueued = false;
   function startQuickNow() {
     quickQueued = false;
@@ -1626,13 +1628,10 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     startRound();
     feed('⚡ Quick match: 1 minute, one winner!', 'gift');
   }
-  window.__fxQuick = () => {
-    if (SESSION_PLAN.length === 1) return 'already-quick';
-    if (quickQueued) return 'already-queued';
-    quickQueued = true;
-    feed('⚡ Quick match queued: starts after this session ends', 'gift');
-    try { banner('⚡ QUICK MATCH NEXT', 'Starts after this session', 'big', 2.2); } catch (err) {}
-    return 'queued';
+  window.__fxQuick = () => {   // #1x1 now starts RIGHT AWAY (restarts the board as a 1-minute quick match)
+    try { banner('⚡ QUICK MATCH', '1 minute · one winner', 'big', 2.2); } catch (err) {}
+    startQuickNow();
+    return 'started';
   };
 
   /* ---------- Events (public API) ---------- */
@@ -1738,7 +1737,13 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     if (shipMode) shipSalvo(p, coins >= 100 ? 18 : Math.min(9, 2 + Math.floor(coins / 8)), coins >= 100);
     if (coins >= 20) giftAssist(p, coins, tier);   // 20+ coin gift: strike whichever enemy is nearest to the gifter's fighter
   }
+  let gaNext = 0;   // gift beams are staggered ~120ms apart so a burst of gifts doesn't animate all in one frame
   function giftAssist(p, coins, tier) {
+    const nowMs = performance.now(); gaNext = Math.max(gaNext, nowMs);
+    const delay = gaNext - nowMs; if (delay < 1500) gaNext += 120;
+    if (delay < 20) giftAssistNow(p, coins, tier); else setTimeout(() => giftAssistNow(p, coins, tier), Math.min(delay, 1500));
+  }
+  function giftAssistNow(p, coins, tier) {
     if (!p.alive) return;
     let target = null, best = Infinity;
     for (const q of aliveList()) {
@@ -1751,9 +1756,9 @@ body.test #legend .g:active{background:rgba(58,42,138,.85)}
     const dx = target.x - p.x, dy = target.y - p.y, d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
     const c = 'hsl(' + p.hue + ',100%,70%)';
     sfx.laser();
-    for (let i = 0; i < 10; i++) {
-      const u = i / 9, bx = p.x + nx * best * u, by = p.y + ny * best * u;
-      setTimeout(() => spark(bx, by, c, 2, 60, .25), i * 12);
+    for (let i = 0; i < 7; i++) {
+      const u = i / 6, bx = p.x + nx * best * u, by = p.y + ny * best * u;
+      setTimeout(() => spark(bx, by, c, 2, 60, .25), i * 16);
     }
     setTimeout(() => {
       if (!target.alive) return;
